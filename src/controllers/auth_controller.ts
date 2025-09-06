@@ -101,10 +101,13 @@ export const authController = {
         return;
       }
 
+      const salt = await bcryptjs.genSalt(10);
+      const hashedPassword = await bcryptjs.hash(password, salt);
+
       const user = new UserModel({
         email: email,
         phone_number: phone,
-        password: password,
+        password: hashedPassword,
       });
 
       const otp = Math.floor(100000 + Math.random() * 900000);

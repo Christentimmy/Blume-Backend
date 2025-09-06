@@ -1,7 +1,10 @@
 import express from "express";
 import dotenv from "dotenv";
 import { connectToDatabase } from "./config/database";
+
 import authRouter from "./routes/auth_route";
+import userRouter from "./routes/user_route";
+
 import morgan from "morgan";
 
 dotenv.config();
@@ -16,6 +19,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use("/api/auth", authRouter);
+app.use("/api/user", userRouter);
 
 // Database Connection
 connectToDatabase();
