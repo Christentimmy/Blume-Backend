@@ -5,11 +5,12 @@ import bcryptjs from "bcryptjs";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
+import { sendOTP } from "../services/email_service";
 import { redisController } from "./redis_controller";
 
 const isValidObjectId = mongoose.Types.ObjectId.isValid;
 dotenv.config();
-const token_secret = process.env.TOKEN_SECRET;
+const token_secret = process.env.JWT_SECRET;
 
 if (!token_secret) {
   throw new Error("TOKEN_SECRET is missing in .env");
@@ -80,125 +81,102 @@ export const authController = {
     }
   },
 
-  registerWithNumber: async (req: Request, res: Response) => {
+  register: async (req: Request, res: Response) => {
     try {
       if (!req.body || typeof req.body !== "object") {
         res.status(400).json({ message: "Missing request body" });
         return;
       }
-      const { phone } = req.body;
-      if (!phone) {
-        res.status(400).json({ message: "Phone number is required" });
+      const { email, phone, password } = req.body;
+      if (!email || !phone || !password) {
+        res
+          .status(400)
+          .json({ message: "Email, phone, and password are required" });
         return;
       }
 
-      //   const response = await checkNumberValidity(phone);
-      //   if (response === false) {
-      //     res.status(400).json({ message: "Number is not valid" });
-      //     return;
-      //   }
-
-      const existingUser = await UserModel.findOne({ phone_number: phone });
+      const existingUser = await UserModel.findOne({ email: email });
       if (existingUser) {
         res.status(400).json({ message: "User already exists" });
         return;
       }
 
       const user = new UserModel({
+        email: email,
         phone_number: phone,
-        role: "user",
+        password: password,
       });
 
-      await user.save();
+      const otp = Math.floor(100000 + Math.random() * 900000);
+      const response = await sendOTP(email, otp.toString());
+      if (!response.success) {
+        res.status(500).json({ message: response.message });
+        return;
+      }
 
-      const jwtToken = generateToken(user);
+      await user.save();
+      const token = generateToken(user);
 
       res.status(201).json({
         message: "User registered successfully",
-        token: jwtToken,
+        token: token,
         email: user.email,
       });
     } catch (error) {
-      console.log(error);
-      return res.status(500).json({ message: "Internal server error" });
+      console.error(error);
+      res.status(500).json({ message: "Internal Server Error" });
     }
   },
 
-  sendNumberOtp: async (req: Request, res: Response) => {
+  sendOtp: async (req: Request, res: Response) => {
     try {
       if (!req.body || typeof req.body !== "object") {
         res.status(400).json({ message: "Missing request body" });
         return;
       }
-
-      const { phone } = req.body;
-      if (!phone) {
-        res.status(400).json({ message: "Phone number is required" });
+      const { email } = req.body;
+      if (!email) {
+        res.status(400).json({ message: "Email is required" });
         return;
       }
 
-      // const response = await checkNumberValidity(phone);
-      // if (!response) {
-      //   res.status(400).json({ message: "Number is not valid" });
-      //   return;
-      // }
+      const otp = Math.floor(1000 + Math.random() * 9000).toString();
+      await redisController.saveOtpToStore(email, otp);
+      await sendOTP(email, otp);
 
-      // const { success, otp, error } = await sendOtpToUserPhoneNumber(phone);
-
-      // if (!success || !otp) {
-      //   res.status(500).json({ message: error });
-      //   return;
-      // }
-
-      // await redisController.saveOtpToStore(phone, otp.toString());
-
-      res.status(200).json({ message: "OTP sent successfully." });
-      return;
+      res.status(200).json({ message: "OTP sent" });
     } catch (error) {
-      console.error("Error in requestOTP controller:", error);
-      res
-        .status(500)
-        .json({ message: "An error occurred while processing your request." });
+      console.error("❌ Error in sendSignUpOtp:", error);
+      res.status(500).json({ message: "Internal Server Error" });
     }
   },
 
-  verifyNumberOtp: async (req: Request, res: Response) => {
+  verifyOtp: async (req: Request, res: Response) => {
     try {
       if (!req.body || typeof req.body !== "object") {
         res.status(400).json({ message: "Missing request body" });
         return;
       }
-      const { phone, otp } = req.body;
-      if (!phone || !otp) {
-        res.status(400).json({ message: "Phone number and OTP are required" });
+      const { email, otp } = req.body;
+      if (!email || !otp) {
+        res.status(400).json({ message: "Email and OTP are required" });
         return;
       }
-      // const response = await checkNumberValidity(phone);
-      // if (!response) {
-      //   res.status(400).json({ message: "Number is not valid" });
-      //   return;
-      // }
-
-      // const storedOtp = await redisController.getOtpFromStore(phone);
-      // if (!storedOtp) {
-      //   res.status(400).json({ message: "OTP not found" });
-      //   return;
-      // }
-
-      // if (storedOtp !== otp) {
-      //   res.status(400).json({ message: "Invalid OTP" });
-      //   return;
-      // }
-
-      // await redisController.removeOtp(phone);
-
-      // res.status(200).json({ message: "OTP verified successfully." });
-      return;
+      const savedOtp = await redisController.getOtpFromStore(email);
+      if (!savedOtp || savedOtp !== otp) {
+        res.status(400).json({ message: "Invalid or expired OTP" });
+        return;
+      }
+      const user = await UserModel.findOne({ email });
+      if (user && user.is_email_verified === false) {
+        user.is_email_verified = true;
+        await user.save();
+      }
+      await redisController.removeOtp(email);
+      res.status(200).json({ message: "OTP verified successfully" });
     } catch (error) {
-      console.error("Error in requestOTP controller:", error);
-      res
-        .status(500)
-        .json({ message: "An error occurred while processing your request." });
+      console.error("❌ Error in verifyOtp:", error);
+      res.status(500).json({ message: "Internal Server Error" });
     }
   },
 };
