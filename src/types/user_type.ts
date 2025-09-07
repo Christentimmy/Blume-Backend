@@ -6,7 +6,17 @@ export interface IUser extends Document {
   phone_number: string;
   password: string;
   avatar?: string;
+  education: string; 
   bio?: string;
+  lifestyle: {
+    smoking: string;
+    drinking: string;
+    workout: string;
+  };
+  basics: {
+    occupation: string;
+    religion: string;
+  },
   gender: "male" | "female" | "others";
   interested_in: "male" | "female" | "both" | "others";
   date_of_birth: Date;
@@ -36,7 +46,10 @@ export interface IUser extends Document {
     | "Long-Term"
     | "Marriage"
     | "Short-Term"
-    | "Friends"
+    | "Short term Fun"
+    | "Not sure yet"
+    | "Both"
+    | "New friends"
     | "Other";
   plan: "free" | "basic" | "budget" | "premium";
   daily_swipes: number;

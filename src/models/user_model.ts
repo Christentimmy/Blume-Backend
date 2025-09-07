@@ -9,6 +9,16 @@ const UserSchema = new Schema<IUser>(
         password: { type: String, required: true },
         avatar: { type: String, default: "" },
         bio: { type: String, default: "" },
+        education: { type: String, default: "" },
+        lifestyle: {
+            smoking: { type: String, default: "" },
+            drinking: { type: String, default: "" },
+            workout: { type: String, default: "" },
+        },
+        basics: {
+            occupation: { type: String, default: "" },
+            religion: { type: String, default: "" },
+        },
         gender: { type: String, enum: ["male", "female", "others"] },
         interested_in: {
             type: String,
@@ -18,7 +28,7 @@ const UserSchema = new Schema<IUser>(
         location: {
             type: { type: String, default: "Point" },
             address: { type: String, default: "" },
-            coordinates: { type: [Number], default: [0.0, 0.0], index: "2dsphere" },
+            coordinates: { type: [Number], default: [0.0, 0.0] },
         },
         photos: [{ type: String }],
         hobbies: [{ type: String }],
@@ -44,8 +54,8 @@ const UserSchema = new Schema<IUser>(
         },
         relationship_preference: {
             type: String,
-            enum: ["Long-Term", "Marriage", "Short-Term", "Friends", "Other"],
-            default: "Long-Term"
+            enum: ["Long-Term", "Marriage", "Short-Term", "Short term Fun", "Not sure yet", "Both", "New friends", "Other"],
+            default: "Not sure yet"
         },
         echocoins_balance: { type: Number, default: 0 },
         plan: {
@@ -78,6 +88,8 @@ const UserSchema = new Schema<IUser>(
     },
     { timestamps: true }
 );
+
+UserSchema.index({ location: "2dsphere" });
 
 export default mongoose.model<IUser>("User", UserSchema);
 
