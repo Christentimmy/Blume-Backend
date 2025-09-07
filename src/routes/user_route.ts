@@ -23,6 +23,7 @@ router.use(statusChecker);
 router.get("/get-potential-matches", userController.getPotentialMatches);
 router.post("/swipe-user", userController.swipeUser);
 router.post("/save-one-signal", userController.saveOneSignal);
+router.get("/get-matches", userController.getMatches);
 
 
 export default router;

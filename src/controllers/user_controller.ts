@@ -513,4 +513,19 @@ export const userController = {
       res.status(500).json({ message: "Server error", error });
     }
   },
+
+  getMatches: async (req: Request, res: Response) => {
+    try {
+      const user = res.locals.user;
+      if (!user) {
+        res.status(401).json({ message: "Unauthorized" });
+        return;
+      }
+      const matches = await MatchModel.find({ users: user._id }).populate("users", "full_name avatar");
+      res.status(200).json({ message: "Matches fetched successfully", data: matches });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  },
 };
