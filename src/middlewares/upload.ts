@@ -12,7 +12,25 @@ const datingPhotosStorage = new CloudinaryStorage({
     }),
 });
 
-
 const uploadDatingPhotos = multer({ storage: datingPhotosStorage });
 
-export default uploadDatingPhotos;
+
+const storyStorage = new CloudinaryStorage({
+    cloudinary,
+    params: async (req, file) => {
+        const isVideo = file.mimetype.startsWith("video/");
+        return {
+            folder: "stories",
+            resource_type: isVideo ? "video" : "image",
+            public_id: `${Date.now()}-${file.originalname.split(".")[0]}`,
+        };
+    },
+});
+
+const uploadStoryMedia = multer({
+    storage: storyStorage,
+    limits: { fileSize: 30 * 1024 * 1024 }, // 30MB limit
+});
+
+
+export { uploadDatingPhotos, uploadStoryMedia };
