@@ -33,4 +33,22 @@ const uploadStoryMedia = multer({
 });
 
 
-export { uploadDatingPhotos, uploadStoryMedia };
+// Storage for message images/videos/audio
+const messageMediaStorage = new CloudinaryStorage({
+    cloudinary,
+    params: async (req, file) => {
+        return {
+            folder: "message_media",
+            resource_type: "auto",
+            public_id: `${Date.now()}-${file.originalname.split(".")[0]}`,
+        };
+    },
+});
+
+
+const uploadMessageMedia = multer({
+    storage: messageMediaStorage,
+    limits: { fileSize: 150 * 1024 * 1024 }
+});
+
+export { uploadDatingPhotos, uploadStoryMedia, uploadMessageMedia };
