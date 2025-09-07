@@ -195,7 +195,11 @@ export const storyController = {
   viewManyStories: async (req: Request, res: Response) => {
     try {
       const userId = res.locals.userId;
-      const storyItems = req.body.storyItems;
+      if (!req.body) {
+        res.status(400).json({ message: "Invalid request body" });
+        return;
+      }
+      const { storyItems } = req.body;
       const now = new Date();
 
       if (!Array.isArray(storyItems) || storyItems.length === 0) {

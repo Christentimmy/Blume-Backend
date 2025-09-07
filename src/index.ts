@@ -4,6 +4,7 @@ import { connectToDatabase } from "./config/database";
 
 import authRouter from "./routes/auth_route";
 import userRouter from "./routes/user_route";
+import storyRouter from "./routes/story_route";
 
 import morgan from "morgan";
 
@@ -20,6 +21,7 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.use("/api/auth", authRouter);
 app.use("/api/user", userRouter);
+app.use("/api/story", storyRouter);
 
 // Database Connection
 connectToDatabase();
