@@ -49,7 +49,7 @@ export interface IUser extends Document {
     | "Short term Fun"
     | "Not sure yet"
     | "Both"
-    | "New friends"
+    | "New friends" 
     | "Other";
   plan: "free" | "basic" | "budget" | "premium";
   daily_swipes: number;

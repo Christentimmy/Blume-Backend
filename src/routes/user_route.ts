@@ -8,6 +8,7 @@ const router = express.Router();
 
 router.use(tokenValidationMiddleware);
 
+router.get("/get-user-details", userController.getUserDetails);
 router.post("/update-name", userController.updateName);
 router.patch("/update-dob", userController.updateDob);
 router.patch("/update-gender", userController.updateGender);
@@ -25,6 +26,8 @@ router.post("/swipe-user", userController.swipeUser);
 router.post("/save-one-signal", userController.saveOneSignal);
 router.get("/get-matches", userController.getMatches);
 router.get("/get-users-who-liked-me", userController.getUsersWhoLikedMe);
-
+router.get("/get-user-notifications", userController.getUserNotifications);
+router.patch("/mark-notifications-read", userController.markNotificationsRead);
+router.get("/get-profile-stats", userController.getProfileStats);
 
 export default router;

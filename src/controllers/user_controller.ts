@@ -3,6 +3,8 @@ import UserModel from "../models/user_model";
 import SwipeModel from "../models/swipe_model";
 import mongoose from "mongoose";
 import { MatchModel } from "../models/match_model";
+import Notification from "../models/notification_model";
+import { IUser } from "../types/user_type";
 
 const isValidObjectId = mongoose.Types.ObjectId.isValid;
 
@@ -556,6 +558,116 @@ export const userController = {
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: "Internal Server Error" });
+    }
+  },
+
+  getUserNotifications: async (req: Request, res: Response) => {
+    try {
+      const userId = res.locals.userId;
+      const page = parseInt(req.query.page as string, 10) || 1;
+      const limit = parseInt(req.query.limit as string, 10) || 10;
+      const unread = req.query.unread === "true";
+
+      const filter: any = { userId };
+      if (unread) filter.isRead = false;
+
+      const notifications = await Notification.find(filter)
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit);
+
+      const totalNotifications = await Notification.countDocuments(filter);
+
+      res.status(200).json({
+        notifications,
+        page,
+        limit,
+        totalNotifications,
+        totalPages: Math.ceil(totalNotifications / limit),
+        hasNextPage: page * limit < totalNotifications,
+      });
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+      res.status(500).json({ message: "Something went wrong" });
+    }
+  },
+
+  markNotificationsRead: async (req: Request, res: Response) => {
+    try {
+      const userId = res.locals.userId;
+      const { notificationIds } = req.body; // Expecting an array of notification IDs
+
+      if (
+        !notificationIds ||
+        !Array.isArray(notificationIds) ||
+        notificationIds.length === 0
+      ) {
+        res.status(400).json({ message: "Invalid notification IDs" });
+        return;
+      }
+
+      await Notification.updateMany(
+        { _id: { $in: notificationIds }, userId },
+        { $set: { isRead: true } }
+      );
+
+      res.status(200).json({ message: "Notifications marked as read" });
+    } catch (error) {
+      console.error("Error marking notifications as read:", error);
+      res.status(500).json({ message: "Something went wrong" });
+    }
+  },
+
+  getUserDetails: async (req: Request, res: Response) => {
+    try {
+      const userId = res.locals.userId;
+      if (!userId) {
+        res.status(400).json({ message: "user id required" });
+        return;
+      }
+      const user = await UserModel.findById(userId);
+      if (!user) {
+        res.status(404).json({ message: "user not found" });
+        return;
+      }
+      const customUser = user.toObject();
+      delete customUser.password;
+      delete customUser.role;
+      delete customUser.__v;
+
+      res.status(200).json({
+        message: "user retrieved successfully",
+        data: customUser,
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  },
+
+  getProfileStats: async (req: Request, res: Response) => {
+    try {
+      const user: IUser = res.locals.user;
+      if (!user) {
+        res.status(401).json({ message: "Unauthorized" });
+        return;
+      }
+
+      const matchesCount = await MatchModel.countDocuments({ users: user._id });
+      const likeCounts = await SwipeModel.countDocuments({ swiper: user._id , direction: "like" });
+      const dislikeCounts = await SwipeModel.countDocuments({ swiper: user._id , direction: "dislike" });
+      
+      res.status(200).json({
+        message: "Profile stats retrieved successfully",
+        data: {
+          matchesCount,
+          likeCounts,
+          dislikeCounts,
+        },
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Internal server error" });
     }
   },
 };
