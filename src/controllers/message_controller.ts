@@ -5,6 +5,10 @@ import { onlineUsers } from "../config/socket";
 import { decrypt, encrypt } from "../utils/encryption";
 
 export const sendMessage = async (req: Request, res: Response) => {
+    if (!req.body) {
+        res.status(400).json({ message: "No data provided" });
+        return;
+    }
     const { receiverId, message, messageType = "text" } = req.body;
     const senderId = res.locals.userId;
 
