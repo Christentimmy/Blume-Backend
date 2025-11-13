@@ -3,11 +3,11 @@ import dotenv from "dotenv";
 import userSchema from "../models/user_model";
 import Message from "../models/message_model";
 import { checkMessageLimitSocket } from "../middlewares/socket_middleware";
-import sendPushNotification from "../config/onesignal";
+import { sendPushNotification, NotificationType } from "../config/onesignal";
 import DailyDmLog from "../models/dailydmlog_model";
 import planLimits from "../middlewares/plan_limit";
 import { encrypt, decrypt } from "../utils/encryption";
-import { MatchModel } from "../models/match_model";
+import { Match } from "../models/match_model";
 import { MessageDocument } from "../models/message_model";
 
 dotenv.config();
@@ -50,7 +50,7 @@ function sendMessage(
       const user = await userSchema.findById(senderId);
 
       // Check if sender and receiver are a match
-      const isMatch = await MatchModel.exists({
+      const isMatch = await Match.exists({
         users: { $all: [user._id, receiverId] },
       });
 
@@ -218,7 +218,7 @@ function sendMessage(
         await sendPushNotification(
           receiverId,
           receiver.one_signal_id,
-          "message",
+          NotificationType.MESSAGE,
           `${socket.data.user.full_name} sent new message`
         );
       }

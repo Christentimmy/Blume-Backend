@@ -102,9 +102,8 @@ function generateEmailOtpTemplate(otpCode: string) {
     </head>
     <body>
       <div class="container">
-        <div class="header">
-          <h1>Blume</h1>
-          <p>Your ride, your way</p>
+        <div class="header" style="text-align: center; margin-bottom: 20px;">
+          <img src="https://res.cloudinary.com/dlpetmfks/image/upload/v1762948696/Blume_fgh4e3.png" alt="Blume Logo" style="max-width: 200px; height: auto;">
         </div>
         
         <div class="content">
@@ -124,11 +123,11 @@ function generateEmailOtpTemplate(otpCode: string) {
           
           <div class="divider"></div>
           
-          <p>Need help? Contact our <a href="mailto:support@ridexpress.com" style="color: #FF8C42; text-decoration: none; font-weight: 500;">support team</a></p>
+          <p>Need help? Contact our <a href="mailto:support@blume.com" style="color: #FF8C42; text-decoration: none; font-weight: 500;">support team</a></p>
         </div>
         
         <div class="footer">
-          <p>&copy; ${new Date().getFullYear()} RideXpress. All rights reserved.</p>
+          <p>&copy; ${new Date().getFullYear()} Blume. All rights reserved.</p>
           <p>
             <a href="https://ridexpress.com" style="color: #FF8C42; text-decoration: none; margin: 0 10px; font-weight: 500;">Website</a>
             <a href="https://ridexpress.com/privacy" style="color: #FF8C42; text-decoration: none; margin: 0 10px; font-weight: 500;">Privacy Policy</a>

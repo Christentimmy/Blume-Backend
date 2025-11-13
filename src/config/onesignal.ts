@@ -4,22 +4,34 @@ import Notification from "../models/notification_model";
 
 dotenv.config();
 
+const oneSignalAppId = process.env.ONESIGNAL_APP_ID;
+const oneSignalApiKey = process.env.ONESIGNAL_API_KEY;
+
+if (!oneSignalAppId || !oneSignalApiKey) {
+  console.error("Missing OneSignal credentials in environment variables.");
+  process.exit(1);
+}
+
+enum NotificationType {
+  LIKE = "like",
+  SUPERLIKE = "superlike",
+  MESSAGE = "message",
+  MATCH = "match",
+  INVITE = "invite",
+  SYSTEM = "system",
+}
 
 
 const sendPushNotification = async (
   userId: string, 
   playerId: string, 
-  type: "match" | "message" | "like" | "super_like" | "system",
+  type: NotificationType,
   message: string,
   link?: string
 ) => {
-  const oneSignalAppId = process.env.ONESIGNAL_APP_ID;
-  const oneSignalApiKey = process.env.ONESIGNAL_API_KEY;
-
-  // Save notification in MongoDB
   try {
     const notification = new Notification({
-      userId, // MongoDB User ID
+      userId,
       type,
       message,
       link,
@@ -27,10 +39,9 @@ const sendPushNotification = async (
     await notification.save();
   } catch (dbError) {
     console.error("Error saving notification to DB:", dbError);
-    return; // Prevent push notification if DB save fails
+    return;
   }
 
-  // Send push notification via OneSignal (only if playerId exists)
   if (!playerId) {
     console.warn(`User ${userId} has no OneSignal Player ID, skipping push notification.`);
     return;
@@ -38,10 +49,10 @@ const sendPushNotification = async (
 
   const payload = {
     app_id: oneSignalAppId,
-    include_player_ids: [playerId], // OneSignal Player ID
+    include_player_ids: [playerId],
     headings: { en: "New Notification" },
     contents: { en: message },
-    url: link, // Optional deep link
+    url: link,
   };
 
   try {
@@ -56,8 +67,8 @@ const sendPushNotification = async (
       }
     );
   } catch (error) {
-    console.error("Error sending push notification:", error.response?.data || error.message);
+    console.error("Error sending push notification:", error.response?.data || error.message);  
   }
 };
 
-export default sendPushNotification;
+export { sendPushNotification, NotificationType };

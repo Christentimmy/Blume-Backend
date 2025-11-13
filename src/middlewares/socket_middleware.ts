@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken";
 import { Socket } from "socket.io";
 import userSchema from "../models/user_model";
 import planLimits from "./plan_limit";
-import { MatchModel } from "../models/match_model";
+import { Match } from "../models/match_model";
 import Message from "../models/message_model";
 
 const authenticateSocket = async (
@@ -55,7 +55,7 @@ export const checkMessageLimitSocket = async (
     if (user.plan === "premium") return false;
 
     // ✅ Check if sender and receiver are matched
-    const isMatch = await MatchModel.exists({
+    const isMatch = await Match.exists({
       users: { $all: [sender._id, receiverId] },
     });
 

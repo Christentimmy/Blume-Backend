@@ -1,12 +1,13 @@
 import { Request, Response } from "express";
 import UserModel from "../models/user_model";
-import SwipeModel from "../models/swipe_model";
+import { Swipe } from "../models/swipe_model";
 import mongoose from "mongoose";
-import { MatchModel } from "../models/match_model";
+import { Match } from "../models/match_model";
 import Notification from "../models/notification_model";
 import { IUser } from "../types/user_type";
+import { sendPushNotification, NotificationType } from "../config/onesignal";
 
-const isValidObjectId = mongoose.Types.ObjectId.isValid;
+// const isValidObjectId = mongoose.Types.ObjectId.isValid;
 
 export const userController = {
   updateName: async (req: Request, res: Response) => {
@@ -54,6 +55,11 @@ export const userController = {
         return;
       }
       const { date_of_birth } = req.body;
+      if (!date_of_birth) {
+        res.status(400).json({ message: "Date of birth is required" });
+        return;
+      }
+
       let date: Date;
       try {
         date = new Date(date_of_birth);
@@ -62,10 +68,6 @@ export const userController = {
         return;
       }
 
-      if (!date_of_birth) {
-        res.status(400).json({ message: "Date of birth is required" });
-        return;
-      }
       const user = await UserModel.findById(res.locals.userId);
       if (!user) {
         res.status(404).json({ message: "User not found" });
@@ -86,7 +88,7 @@ export const userController = {
         res.status(400).json({ message: "Missing request body" });
         return;
       }
-      const { gender } = req.body;
+      const { gender, showGender } = req.body;
       if (!gender) {
         res.status(400).json({ message: "Gender is required" });
         return;
@@ -97,6 +99,9 @@ export const userController = {
         return;
       }
       user.gender = gender;
+      if (showGender) {
+        user.showGender = showGender;
+      }
       await user.save();
       res.status(200).json({ message: "Gender updated successfully" });
     } catch (error) {
@@ -111,22 +116,21 @@ export const userController = {
         res.status(400).json({ message: "Missing request body" });
         return;
       }
-      const { relationship_preference } = req.body;
+      let { relationship_preference } = req.body;
+      relationship_preference = relationship_preference.toLowerCase();
       if (!relationship_preference) {
-        res
-          .status(400)
-          .json({ message: "Relationship preference is required" });
+        res.status(400).json({
+          message: "Relationship preference is required",
+        });
         return;
       }
       const list = [
-        "Long-Term",
-        "Marriage",
-        "Short-Term",
-        "Short term Fun",
-        "Not sure yet",
-        "Both",
-        "New friends",
-        "Other",
+        "long term partner",
+        "short term partner",
+        "both",
+        "new friends",
+        "short term fun",
+        "not sure yet",
       ];
       if (!list.includes(relationship_preference)) {
         res.status(400).json({ message: "Invalid relationship preference" });
@@ -155,18 +159,23 @@ export const userController = {
         return;
       }
       const { distance } = req.body;
-      if (distance) {
-        const user = await UserModel.findById(res.locals.userId);
-        if (!user) {
-          res.status(404).json({ message: "User not found" });
-          return;
-        }
-        user.preferences.maxDistance = distance;
-        await user.save();
-        res
-          .status(200)
-          .json({ message: "Distance preference updated successfully" });
+      if (!distance) {
+        res.status(400).json({ message: "Distance is required" });
+        return;
       }
+
+      const user = await UserModel.findById(res.locals.userId);
+      if (!user) {
+        res.status(404).json({ message: "User not found" });
+        return;
+      }
+
+      user.preferences.maxDistance = Number(distance);
+      await user.save();
+
+      res.status(200).json({
+        message: "Distance preference updated successfully",
+      });
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: "Internal Server Error" });
@@ -215,9 +224,9 @@ export const userController = {
         res.status(404).json({ message: "User not found" });
         return;
       }
-      user.lifestyle.smoking = smoking.toLowerCase();
-      user.lifestyle.drinking = drinking.toLowerCase();
-      user.lifestyle.workout = workout.toLowerCase();
+      user.basics.smoking = smoking.toLowerCase();
+      user.basics.drinking = drinking.toLowerCase();
+      user.basics.workout = workout.toLowerCase();
       await user.save();
       res.status(200).json({ message: "Lifestyle updated successfully" });
     } catch (error) {
@@ -233,9 +242,19 @@ export const userController = {
         return;
       }
 
-      const { occupation, religion } = req.body;
+      const {
+        occupation,
+        religion,
+        education,
+        height,
+        sexOrientation,
+        languages,
+      } = req.body;
+
       if (!occupation || !religion) {
-        res.status(400).json({ message: "Missing basic details" });
+        res
+          .status(400)
+          .json({ message: "Occupation and religion are required" });
         return;
       }
 
@@ -246,6 +265,100 @@ export const userController = {
       }
       user.basics.occupation = occupation.toLowerCase();
       user.basics.religion = religion.toLowerCase();
+      if (education) {
+        user.basics.education = education.toLowerCase();
+      }
+      if (height) {
+        user.basics.height = height.toLowerCase();
+      }
+      if (sexOrientation) {
+        user.basics.sexOrientation = sexOrientation.toLowerCase();
+      }
+      if (languages || languages.length > 0) {
+        const lowerCaseLanguages = languages.map((lang: string) =>
+          lang.toLowerCase()
+        );
+        user.basics.languages = lowerCaseLanguages;
+      }
+      await user.save();
+      res.status(200).json({ message: "Basic details updated successfully" });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  },
+
+  updateBasic2: async (req: Request, res: Response) => {
+    try {
+      if (!req.body || typeof req.body !== "object") {
+        res.status(400).json({ message: "Missing request body" });
+        return;
+      }
+      const {
+        lifestyleAndValues,
+        hobbies,
+        artsAndCreativity,
+        sportsAndFitness,
+        travelAndAdventure,
+        entertainment,
+        music,
+        foodAndDrink,
+      } = req.body;
+
+      const user = await UserModel.findById(res.locals.userId);
+      if (!user) {
+        res.status(404).json({ message: "User not found" });
+        return;
+      }
+      if (lifestyleAndValues) {
+        const lowerCaseLifestyleAndValues = lifestyleAndValues.map(
+          (value: string) => value.toLowerCase()
+        );
+        user.basics.lifestyleAndValues = lowerCaseLifestyleAndValues;
+      }
+      if (hobbies) {
+        const lowerCaseHobbies = hobbies.map((hobby: string) =>
+          hobby.toLowerCase()
+        );
+        user.basics.hobbies = lowerCaseHobbies;
+      }
+      if (artsAndCreativity) {
+        const lowerCaseArtsAndCreativity = artsAndCreativity.map(
+          (value: string) => value.toLowerCase()
+        );
+        user.basics.artsAndCreativity = lowerCaseArtsAndCreativity;
+      }
+      if (sportsAndFitness) {
+        const lowerCaseSportsAndFitness = sportsAndFitness.map(
+          (value: string) => value.toLowerCase()
+        );
+        user.basics.sportsAndFitness = lowerCaseSportsAndFitness;
+      }
+      if (travelAndAdventure) {
+        const lowerCaseTravelAndAdventure = travelAndAdventure.map(
+          (value: string) => value.toLowerCase()
+        );
+        user.basics.travelAndAdventure = lowerCaseTravelAndAdventure;
+      }
+      if (entertainment) {
+        const lowerCaseEntertainment = entertainment.map((value: string) =>
+          value.toLowerCase()
+        );
+        user.basics.entertainment = lowerCaseEntertainment;
+      }
+      if (music) {
+        const lowerCaseMusic = music.map((value: string) =>
+          value.toLowerCase()
+        );
+        user.basics.music = lowerCaseMusic;
+      }
+      if (foodAndDrink) {
+        const lowerCaseFoodAndDrink = foodAndDrink.map((value: string) =>
+          value.toLowerCase()
+        );
+        user.basics.foodAndDrink = lowerCaseFoodAndDrink;
+      }
+
       await user.save();
       res.status(200).json({ message: "Basic details updated successfully" });
     } catch (error) {
@@ -379,9 +492,9 @@ export const userController = {
       const { preferences, location } = user;
       const maxDistance = preferences.maxDistance ?? 10000.0;
 
-      const swipedUserIds = await SwipeModel.find({
-        swiper: user._id,
-      }).distinct("swiped");
+      const swipedUserIds = await Swipe.find({
+        userId: user._id,
+      }).distinct("targetUserId");
 
       const matchCriteria: any = {
         _id: { $ne: user._id, $nin: swipedUserIds },
@@ -412,73 +525,63 @@ export const userController = {
 
   swipeUser: async (req: Request, res: Response) => {
     try {
-      const user = res.locals.user;
-      if (!user) {
-        return res.status(401).json({ message: "Unauthorized" });
+      const userId = res.locals.userId;
+      if (!userId) {
+        res.status(401).json({ message: "Unauthorized" });
+        return;
+      }
+      const { targetUserId, type } = req.body;
+
+      if (!targetUserId || !type) {
+        res.status(400).json({ message: "Missing required fields" });
+        return;
+      }
+      if (type !== "like" && type !== "pass" && type !== "superlike") {
+        res.status(400).json({ message: "Invalid swipe type" });
+        return;
       }
 
-      const { swipedUserId, action } = req.body;
-      if (!swipedUserId || !action || !isValidObjectId(swipedUserId)) {
-        return res.status(400).json({ message: "Missing user ID or action" });
-      }
-      if (!["like", "dislike"].includes(action)) {
-        return res.status(400).json({ message: "Invalid action" });
+      const targetUser = await UserModel.findById(targetUserId);
+      if (!targetUser) {
+        res.status(404).json({ message: "User not found" });
+        return;
       }
 
-      const swipedUser = await UserModel.findById(swipedUserId);
-      if (!swipedUser) {
-        return res.status(404).json({ message: "User not found" });
-      }
+      // 3. Prevent duplicate swipe (update if exists)
+      await Swipe.findOneAndUpdate(
+        { userId, targetUserId },
+        { type },
+        { new: true, upsert: true }
+      );
 
-      // Check if user already swiped this person
-      let swipe = await SwipeModel.findOne({
-        swiper: user._id,
-        swiped: swipedUser._id,
-      });
-      if (swipe) {
-        swipe.direction = action;
-        await swipe.save();
-      } else {
-        swipe = new SwipeModel({
-          swiper: user._id,
-          swiped: swipedUser._id,
-          direction: action,
-        });
-        await swipe.save();
-      }
-
-      // 🔥 If it's a like, check if swiped user also liked back
-      if (action === "like") {
-        const oppositeSwipe = await SwipeModel.findOne({
-          swiper: swipedUser._id,
-          swiped: user._id,
-          direction: "like",
+      if (type === "like" || type === "superlike") {
+        const reverseSwipe = await Swipe.findOne({
+          userId: targetUserId,
+          targetUserId: userId,
+          type: { $in: ["like", "superlike"] },
         });
 
-        if (oppositeSwipe) {
-          // Check if match already exists
-          const existingMatch = await MatchModel.findOne({
-            users: { $all: [user._id, swipedUser._id] },
-          });
-
-          if (!existingMatch) {
-            const match = new MatchModel({
-              users: [user._id, swipedUser._id],
-            });
-            await match.save();
-          }
+        if (reverseSwipe) {
+          const sortedUsers = [userId, targetUserId].sort();
+          await Match.create({ users: sortedUsers });
+          await sendPushNotification(
+            targetUserId,
+            targetUser.one_signal_id,
+            NotificationType.MATCH,
+            "It's a match! 🎉"
+          );
 
           return res.status(200).json({
             message: "It's a match! 🎉",
-            match: true,
+            match: { userId, targetUserId },
           });
         }
       }
 
-      return res.status(200).json({ message: "Swipe saved", match: false });
+      res.status(200).json({ message: "User liked successfully!" });
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Internal Server Error" });
+      console.error("Error liking user:", error);
+      res.status(500).json({ message: "Something went wrong" });
     }
   },
 
@@ -523,7 +626,7 @@ export const userController = {
         res.status(401).json({ message: "Unauthorized" });
         return;
       }
-      const matches = await MatchModel.find({ users: user._id }).populate(
+      const matches = await Match.find({ users: user._id }).populate(
         "users",
         "full_name avatar"
       );
@@ -536,6 +639,117 @@ export const userController = {
     }
   },
 
+  newGetPotentialMatches: async (req: Request, res: Response) => {
+    try {
+      const user: IUser = res.locals.user;
+
+      const [minAge, maxAge] = user.preferences.ageRange ?? [18, 150];
+      const maxDistance = user.preferences.maxDistance ?? 50.0;
+
+      // Pagination variables
+      const page = parseInt(req.query.page as string, 10) || 1;
+      const limit = 20;
+      const skip = (page - 1) * limit;
+
+      // Calculate min & max birth years for age range filtering
+      const currentYear = new Date().getFullYear();
+      const minBirthYear = new Date(currentYear - maxAge, 0, 1);
+      const maxBirthYear = new Date(currentYear - minAge, 11, 31);
+
+      const aggregatePipeline: any[] = [
+        {
+          $geoNear: {
+            near: { type: "Point", coordinates: user.location.coordinates },
+            distanceField: "distance",
+            maxDistance: maxDistance * 1000, // Convert km to meters
+            spherical: true,
+          },
+        },
+        {
+          $lookup: {
+            from: "swipes", // collection name in MongoDB
+            let: { candidateId: "$_id" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ["$targetUserId", "$$candidateId"] },
+                      { $eq: ["$userId", user._id] }, // only swipes by current user
+                    ],
+                  },
+                },
+              },
+            ],
+            as: "swipeInfo",
+          },
+        },
+        {
+          $match: {
+            date_of_birth: { $gte: minBirthYear, $lte: maxBirthYear },
+            status: "active",
+            role: "user",
+            // hobbies: { $in: user.hobbies },
+            isDeleted: false,
+            // profile_completed: true,
+            _id: { $ne: user._id },
+            swipeInfo: { $eq: [] },
+            relationship_preference: user.relationship_preference,
+          },
+        },
+        { $sort: { matchPercentage: -1 } },
+        { $skip: skip },
+        { $limit: limit },
+        {
+          $project: {
+            full_name: 1,
+            avatar: 1,
+            date_of_birth: 1,
+            location: 1,
+            basics: 1,
+            hobbies: 1,
+            preferences: 1,
+            matchPercentage: 1,
+            interested_in: 1,
+            photos: 1,
+          },
+        },
+      ];
+
+      // Fetch matches using the aggregate pipeline
+      const matches = await UserModel.aggregate(aggregatePipeline);
+
+      // Directly use stored location address
+      // for (let match of matches) {
+      //   const distanceKm = (match.distance / 1000).toFixed(1);
+      //   match.location = {
+      //     address: `${match.location.address} (${distanceKm} Km)`,
+      //     coordinates: match.location.coordinates,
+      //   };
+      // }
+
+      // Get total count for pagination - This needs to use the same pipeline
+      const countPipeline = [...aggregatePipeline];
+      countPipeline.splice(-2, 2);
+      countPipeline.push({ $count: "total" });
+      const countResult = await UserModel.aggregate(countPipeline);
+      const totalMatches = countResult.length > 0 ? countResult[0].total : 0;
+
+      res.status(200).json({
+        message: "Matches retrieved successfully",
+        data: matches,
+        page,
+        limit,
+        totalMatches,
+        totalPages: Math.ceil(totalMatches / limit),
+        hasNextPage: page * limit < totalMatches,
+      });
+    } catch (error) {
+      console.error("Error fetching matches:", error);
+      res.status(500).json({ message: "Something went wrong" });
+    }
+  },
+
   getUsersWhoLikedMe: async (req: Request, res: Response) => {
     try {
       const user = res.locals.user;
@@ -543,13 +757,13 @@ export const userController = {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
-      const swipes = await SwipeModel.find({
-        swiped: user._id,
-        direction: "like",
-      }).populate("swiper", "full_name avatar");
+      const swipes = await Swipe.find({
+        targetUserId: user._id,
+        type: "like",
+      }).populate("userId", "full_name avatar");
 
       // Format response
-      const users = swipes.map((swipe) => swipe.swiper);
+      const users = swipes.map((swipe) => swipe.userId);
 
       return res.status(200).json({
         message: "Users who liked you fetched successfully",
@@ -653,10 +867,16 @@ export const userController = {
         return;
       }
 
-      const matchesCount = await MatchModel.countDocuments({ users: user._id });
-      const likeCounts = await SwipeModel.countDocuments({ swiper: user._id , direction: "like" });
-      const dislikeCounts = await SwipeModel.countDocuments({ swiper: user._id , direction: "dislike" });
-      
+      const matchesCount = await Match.countDocuments({ users: user._id });
+      const likeCounts = await Swipe.countDocuments({
+        userId: user._id,
+        type: "like",
+      });
+      const dislikeCounts = await Swipe.countDocuments({
+        userId: user._id,
+        type: "dislike",
+      });
+
       res.status(200).json({
         message: "Profile stats retrieved successfully",
         data: {

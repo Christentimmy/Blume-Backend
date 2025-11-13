@@ -6,17 +6,35 @@ export interface IUser extends Document {
   phone_number: string;
   password: string;
   avatar?: string;
-  education: string; 
+  education: string;
   bio?: string;
-  lifestyle: {
+  // lifestyle: {
+  //   smoking: string;
+  //   drinking: string;
+  //   workout: string;
+  // };
+  basics: {
     smoking: string;
     drinking: string;
     workout: string;
-  };
-  basics: {
     occupation: string;
     religion: string;
-  },
+    education: string;
+    height: string;
+    sexOrientation: string;
+    languages: string[];
+
+    //part2
+    lifestyleAndValues: string[];
+    hobbies: string[];
+    artsAndCreativity: string[];
+    sportsAndFitness: string[];
+    travelAndAdventure: string[];
+    entertainment: string[];
+    music: string[];
+    foodAndDrink: string[];
+  };
+  showGender: boolean;
   gender: "male" | "female" | "others";
   interested_in: "male" | "female" | "both" | "others";
   date_of_birth: Date;
@@ -25,7 +43,6 @@ export interface IUser extends Document {
     address: string;
     coordinates: [number, number]; // [longitude, latitude]
   };
-  echocoins_balance: number;
   photos: string[];
   hobbies: string[];
   preferences: {
@@ -43,29 +60,26 @@ export interface IUser extends Document {
   updated_at: Date;
   one_signal_id: string;
   relationship_preference:
-    | "Long-Term"
-    | "Marriage"
-    | "Short-Term"
-    | "Short term Fun"
-    | "Not sure yet"
-    | "Both"
-    | "New friends" 
-    | "Other";
+    | "long term partner"
+    | "short term partner"
+    | "both"
+    | "new friends"
+    | "short term fun"
+    | "not sure yet";
   plan: "free" | "basic" | "budget" | "premium";
   daily_swipes: number;
   daily_messages: number;
-  subscriptionStatus: "none" | "active" | "expired" | "cancelled";
-  subscriptionEndDate: Date | null;
+  subscription: {
+    planId: string;
+    status:
+      | "active"
+      | "canceled"
+      | "past_due"
+      | "unpaid"
+      | "incomplete"
+      | "none";
+    currentPeriodEnd: Date;
+    cancelAtPeriodEnd: boolean;
+  };
   isVerified: boolean;
-  linked_bank_accounts: [
-    {
-      recipient_code: string;
-      account_number: string;
-      account_name: string;
-      bank_code: string;
-      bank_name: string;
-      currency: string;
-      metadata?: any;
-    }
-  ];
 }

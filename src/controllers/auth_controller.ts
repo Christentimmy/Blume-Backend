@@ -27,15 +27,15 @@ export const authController = {
       const { identifier, password } = req.body;
 
       if (!identifier || !password) {
-        res
-          .status(400)
-          .send({ message: "Identifier and password are required" });
+        res.status(400).send({
+          message: "Identifier and password are required",
+        });
         return;
       }
 
       const user = await UserModel.findOne({
         $or: [{ email: identifier }, { phone_number: identifier }],
-      });
+      }).select("+password");
 
       if (!user) {
         res.status(404).send({ message: "Invalid Credentials" });
@@ -50,8 +50,8 @@ export const authController = {
       }
 
       // Check if user is banned
-      if (user.status === "banned") {
-        res.status(403).send({ message: "Account banned" });
+      if (user.status !== "active") {
+        res.status(403).send({ message: `Account ${user.status}`});
         return;
       }
 
@@ -89,9 +89,9 @@ export const authController = {
       }
       const { email, phone, password } = req.body;
       if (!email || !phone || !password) {
-        res
-          .status(400)
-          .json({ message: "Email, phone, and password are required" });
+        res.status(400).json({
+          message: "Email, phone, and password are required",
+        });
         return;
       }
 
@@ -116,6 +116,7 @@ export const authController = {
         res.status(500).json({ message: response.message });
         return;
       }
+      await redisController.saveOtpToStore(email, otp.toString());
 
       await user.save();
       const token = generateToken(user);

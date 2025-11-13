@@ -17,6 +17,7 @@ router.patch("/update-distance-preference", userController.distancePreference);
 router.patch("/update-education", userController.updateEducation);
 router.patch("/update-lifestyle", userController.updateLifestyle);
 router.patch("/update-basic", userController.updateBasic);
+router.patch("/update-basic-2", userController.updateBasic2);
 router.post(
   "/upload-dating-photos",
   uploadDatingPhotos.array("photos", 6),
@@ -25,7 +26,7 @@ router.post(
 router.patch("/update-location", userController.updateLocation);
 
 router.use(statusChecker);
-router.get("/get-potential-matches", userController.getPotentialMatches);
+router.get("/get-potential-matches", userController.newGetPotentialMatches);
 router.post("/swipe-user", userController.swipeUser);
 router.post("/save-one-signal", userController.saveOneSignal);
 router.get("/get-matches", userController.getMatches);

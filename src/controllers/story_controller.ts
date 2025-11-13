@@ -4,7 +4,7 @@ import userSchema from "../models/user_model";
 import mongoose from "mongoose";
 // import { io } from '../config/socket';
 import cloudinary from "../config/cloudinary";
-import { MatchModel } from "../models/match_model";
+import { Match } from "../models/match_model";
 
 import generateThumbnail from "../utils/generate_thumbnail";
 import fs from "fs";
@@ -117,7 +117,7 @@ export const storyController = {
       const now = new Date();
 
       // 1️⃣ Fetch all matches for this user
-      const matches = await MatchModel.find({ users: userId })
+      const matches = await Match.find({ users: userId })
         .select("users")
         .lean();
 
