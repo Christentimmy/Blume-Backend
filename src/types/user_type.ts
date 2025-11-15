@@ -54,7 +54,7 @@ export interface IUser extends Document {
   is_premium: boolean;
   profile_completed: boolean;
   role: "user" | "super_admin" | "sub_admin" | "staff";
-  status: "active" | "inactive" | "banned" | "blocked";
+  status: "active" | "inactive" | "banned" | "blocked" | "deleted";
   last_active: Date;
   created_at: Date;
   updated_at: Date;

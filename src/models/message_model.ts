@@ -1,7 +1,8 @@
-import mongoose, { Schema, Document } from "mongoose";
 
-// Define the message schema
-const messageSchema = new Schema(
+import mongoose, { Schema } from "mongoose";
+import { IMessageDocument } from "../types/message_type";
+
+const messageSchema = new Schema<IMessageDocument>(
   {
     senderId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -45,42 +46,16 @@ const messageSchema = new Schema(
       type: String, // 'sent', 'delivered', 'read'
       default: "sent",
     },
-    storyMediaUrl: { type: String, required: false },
     timestamp: {
       type: Date,
       default: Date.now,
     },
+    storyMediaUrl: { type: String, required: false },
   },
   { timestamps: true }
 );
 
-// Create a model for messages
-const Message = mongoose.model<MessageDocument>("Message", messageSchema);
+const Message = mongoose.model<IMessageDocument>("Message", messageSchema);
 
-// Export the model
 export default Message;
 
-// Define the TypeScript interface for Message
-export interface MessageDocument extends Document {
-  senderId: mongoose.Types.ObjectId;
-  receiverId: mongoose.Types.ObjectId;
-  message?: string | null;
-  messageType: string;
-  mediaUrl?: string | null;
-  status: string;
-  iv?: string | null;
-  mediaIv?: string | null;
-  timestamp: Date;
-  clientGeneratedId?: string;
-  isDeleted?: boolean;
-  isEdited?: boolean;
-  avater?: string;
-  replyToMessage?: MessageDocument | null;
-  replyToMessageId?: mongoose.Types.ObjectId | null;
-  multipleImages: {
-    mimetype: string;
-    mediaUrl: string;
-    mediaIv: string;
-    filename: string;
-  }[];
-}

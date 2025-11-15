@@ -182,15 +182,15 @@ export const userController = {
     }
   },
 
-  updateEducation: async (req: Request, res: Response) => {
+  updateBio: async (req: Request, res: Response) => {
     try {
       if (!req.body) {
         res.status(400).json({ message: "Missing request body" });
         return;
       }
-      const { education } = req.body;
-      if (!education) {
-        res.status(400).json({ message: "Education is required" });
+      const { bio } = req.body;
+      if (!bio) {
+        res.status(400).json({ message: "Bio is required" });
         return;
       }
       const user = await UserModel.findById(res.locals.userId);
@@ -198,9 +198,9 @@ export const userController = {
         res.status(404).json({ message: "User not found" });
         return;
       }
-      user.education = education;
+      user.bio = bio;
       await user.save();
-      res.status(200).json({ message: "Education updated successfully" });
+      res.status(200).json({ message: "Bio updated successfully" });
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: "Internal Server Error" });
@@ -274,7 +274,7 @@ export const userController = {
       if (sexOrientation) {
         user.basics.sexOrientation = sexOrientation.toLowerCase();
       }
-      if (languages || languages.length > 0) {
+      if (languages && languages.length > 0) {
         const lowerCaseLanguages = languages.map((lang: string) =>
           lang.toLowerCase()
         );
@@ -621,21 +621,119 @@ export const userController = {
 
   getMatches: async (req: Request, res: Response) => {
     try {
-      const user = res.locals.user;
-      if (!user) {
-        res.status(401).json({ message: "Unauthorized" });
-        return;
+      const userId = new mongoose.Types.ObjectId(res.locals.userId);
+      const user: IUser = res.locals.user;
+      const status = (req.query.status as string)?.toLowerCase();
+
+      // Build the query for user fields
+      const userQuery: any = { "user.status": "active" };
+
+      // Add status-based filtering
+      if (status) {
+        switch (status) {
+          case "verified profile":
+            userQuery["user.is_email_verified"] = true;
+            userQuery["user.isVerified"] = true;
+            break;
+          case "aligned interests":
+            userQuery["user.relationship_preference"] =
+              user.relationship_preference;
+            break;
+          case "education":
+            if (user.basics?.education) {
+              userQuery["user.basics.education"] = {
+                $regex: user.basics.education.replace(
+                  /[.*+?^${}()|[\]\\]/g,
+                  "\\$&"
+                ),
+                $options: "i",
+              };
+            }
+            break;
+          case "lifestyle":
+            if (user.basics?.lifestyleAndValues?.length) {
+              userQuery["user.basics.lifestyleAndValues"] = {
+                $in: user.basics.lifestyleAndValues,
+              };
+            }
+            break;
+          case "religion":
+            if (user.basics?.religion) {
+              userQuery["user.basics.religion"] = {
+                $regex: user.basics.religion.replace(
+                  /[.*+?^${}()|[\]\\]/g,
+                  "\\$&"
+                ),
+                $options: "i",
+              };
+            }
+            break;
+          case "work":
+            if (user.basics?.occupation) {
+              userQuery["user.basics.occupation"] = {
+                $regex: user.basics.occupation.replace(
+                  /[.*+?^${}()|[\]\\]/g,
+                  "\\$&"
+                ),
+                $options: "i",
+              };
+            }
+            break;
+        }
       }
-      const matches = await Match.find({ users: user._id }).populate(
-        "users",
-        "full_name avatar"
-      );
-      res
-        .status(200)
-        .json({ message: "Matches fetched successfully", data: matches });
+
+      const matches = await Match.aggregate([
+        // Match documents where the current user is in the users array
+        {
+          $match: {
+            users: userId,
+            isActive: true,
+          },
+        },
+        // Lookup to get user details
+        {
+          $lookup: {
+            from: "users",
+            localField: "users",
+            foreignField: "_id",
+            as: "user",
+          },
+        },
+        // Unwind the user array to work with individual users
+        { $unwind: "$user" },
+        // Exclude the current user and apply status filters
+        {
+          $match: {
+            "user._id": { $ne: userId },
+            ...userQuery,
+          },
+        },
+        // Project only the needed fields
+        {
+          $project: {
+            _id: "$user._id",
+            full_name: "$user.full_name",
+            avatar: "$user.avatar",
+            gender: "$user.gender",
+            location: "$user.location",
+            bio: "$user.bio",
+            date_of_birth: "$user.date_of_birth",
+            basics: "$user.basics",
+            lastMessage: 1,
+            updatedAt: 1,
+          },
+        },
+        // Sort by last interaction
+        { $sort: { updatedAt: -1 } },
+      ]);
+
+      res.status(200).json({
+        message: "Matches retrieved successfully",
+        data: matches,
+      });
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Internal Server Error" });
+      console.error("Error fetching matches:", error);
+      res.status(500).json({ message: "Something went wrong" });
     }
   },
 
@@ -690,7 +788,6 @@ export const userController = {
             status: "active",
             role: "user",
             // hobbies: { $in: user.hobbies },
-            isDeleted: false,
             // profile_completed: true,
             _id: { $ne: user._id },
             swipeInfo: { $eq: [] },
@@ -752,26 +849,120 @@ export const userController = {
 
   getUsersWhoLikedMe: async (req: Request, res: Response) => {
     try {
-      const user = res.locals.user;
-      if (!user) {
-        return res.status(401).json({ message: "Unauthorized" });
+      const userId = new mongoose.Types.ObjectId(res.locals.userId);
+      const user: IUser = res.locals.user;
+      const status = (req.query.status as string)?.toLowerCase();
+
+      // Build the query for user fields
+      const userQuery: any = { "user.status": "active" };
+
+      // Add status-based filtering
+      if (status) {
+        switch (status) {
+          case "verified profile":
+            userQuery["user.is_email_verified"] = true;
+            userQuery["user.isVerified"] = true;
+            break;
+          case "aligned interests":
+            userQuery["user.relationship_preference"] =
+              user.relationship_preference;
+            break;
+          case "education":
+            if (user.basics?.education) {
+              userQuery["user.basics.education"] = {
+                $regex: user.basics.education.replace(
+                  /[.*+?^${}()|[\]\\]/g,
+                  "\\$&"
+                ),
+                $options: "i",
+              };
+            }
+            break;
+          case "lifestyle":
+            if (user.basics?.lifestyleAndValues?.length) {
+              userQuery["user.basics.lifestyleAndValues"] = {
+                $in: user.basics.lifestyleAndValues,
+              };
+            }
+            break;
+          case "religion":
+            if (user.basics?.religion) {
+              userQuery["user.basics.religion"] = {
+                $regex: user.basics.religion.replace(
+                  /[.*+?^${}()|[\]\\]/g,
+                  "\\$&"
+                ),
+                $options: "i",
+              };
+            }
+            break;
+          case "work":
+            if (user.basics?.occupation) {
+              userQuery["user.basics.occupation"] = {
+                $regex: user.basics.occupation.replace(
+                  /[.*+?^${}()|[\]\\]/g,
+                  "\\$&"
+                ),
+                $options: "i",
+              };
+            }
+            break;
+        }
       }
 
-      const swipes = await Swipe.find({
-        targetUserId: user._id,
-        type: "like",
-      }).populate("userId", "full_name avatar");
+      const swipes = await Swipe.aggregate([
+        // First, match the swipe conditions
+        {
+          $match: {
+            targetUserId: userId,
+            type: { $ne: "dislike" },
+            // Add any other swipe-specific filters here
+          },
+        },
+        // Join with users collection
+        {
+          $lookup: {
+            from: "users",
+            localField: "userId",
+            foreignField: "_id",
+            as: "user",
+          },
+        },
+        // Unwind the user array to work with individual users
+        { $unwind: "$user" },
+        // Apply user-related filters
+        {
+          $match: userQuery,
+        },
+        // Project only the needed fields
+        {
+          $project: {
+            _id: "$user._id",
+            full_name: "$user.full_name",
+            avatar: "$user.avatar",
+            gender: "$user.gender",
+            location: "$user.location",
+            basics: "$user.basics",
+            date_of_birth: "$user.date_of_birth",
+            // Include any other fields you need from the user
+            swipe_created_at: "$createdAt", // Example of including swipe timestamp
+          },
+        },
+        // Sort by the swipe's creation time (most recent first)
+        { $sort: { swipe_created_at: -1 } },
+      ]);
 
-      // Format response
-      const users = swipes.map((swipe) => swipe.userId);
-
-      return res.status(200).json({
-        message: "Users who liked you fetched successfully",
-        data: users,
+      res.status(200).json({
+        message: "Filtered users who liked you",
+        data: swipes,
       });
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Internal Server Error" });
+      console.error("Error fetching users who liked me:", error);
+      res.status(500).json({
+        message: "Something went wrong",
+        error:
+          process.env.NODE_ENV === "development" ? error.message : undefined,
+      });
     }
   },
 
@@ -888,6 +1079,33 @@ export const userController = {
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: "Internal server error" });
+    }
+  },
+
+  getUserWithId: async (req: Request, res: Response) => {
+    try {
+      const userId = req.params.userId;
+      if (!userId) {
+        res.status(404).json({ message: "missing user Id" });
+        return;
+      }
+      const user = await UserModel.findById(userId);
+      if (!user) {
+        res.status(400).json({ message: "user not found" });
+        return;
+      }
+      const customUser = user.toObject();
+      delete customUser.password;
+      delete customUser.role;
+      delete customUser.__v;
+
+      res.status(200).json({
+        message: "user retrieved successfully",
+        data: customUser,
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "server error" });
     }
   },
 };

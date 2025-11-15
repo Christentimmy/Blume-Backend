@@ -257,6 +257,7 @@ export async function getChatList(req: Request, res: Response) {
                     messageType: chat.messageType,
                     unreadCount: chat.unreadCount,
                     online: isOnline,
+                    timestamp: chat.lastMessageTimestamp,
                 };
             })
         );

@@ -18,8 +18,7 @@ const authenticateSocket = async (
     }
 
     // Verify the token
-    const decoded: any = jwt.verify(token, process.env.TOKEN_SECRET as string);
-
+    const decoded: any = jwt.verify(token, process.env.JWT_SECRET as string);
     const user = await userSchema.findById(decoded.id);
 
     if (!user) {

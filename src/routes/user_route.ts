@@ -14,7 +14,7 @@ router.patch("/update-dob", userController.updateDob);
 router.patch("/update-gender", userController.updateGender);
 router.patch("/update-preference", userController.updatePreference);
 router.patch("/update-distance-preference", userController.distancePreference);
-router.patch("/update-education", userController.updateEducation);
+router.patch("/update-bio", userController.updateBio);
 router.patch("/update-lifestyle", userController.updateLifestyle);
 router.patch("/update-basic", userController.updateBasic);
 router.patch("/update-basic-2", userController.updateBasic2);
@@ -34,5 +34,6 @@ router.get("/get-users-who-liked-me", userController.getUsersWhoLikedMe);
 router.get("/get-user-notifications", userController.getUserNotifications);
 router.patch("/mark-notifications-read", userController.markNotificationsRead);
 router.get("/get-profile-stats", userController.getProfileStats);
+router.get("/get-user-with-id/:userId", userController.getUserWithId);
 
 export default router;

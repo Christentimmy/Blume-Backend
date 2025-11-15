@@ -62,7 +62,7 @@ const UserSchema = new Schema<IUser>(
     status: {
       type: String,
       default: "active",
-      enum: ["active", "inactive", "banned", "blocked"],
+      enum: ["active", "inactive", "banned", "blocked", "deleted"],
     },
     profile_completed: { type: Boolean, default: false },
     isVerified: { type: Boolean, default: false },

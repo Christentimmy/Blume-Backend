@@ -7,6 +7,7 @@ import mongoose from "mongoose";
 import dotenv from "dotenv";
 import { sendOTP } from "../services/email_service";
 import { redisController } from "./redis_controller";
+import tokenBlacklistSchema from "../models/token_blacklist_model";
 
 const isValidObjectId = mongoose.Types.ObjectId.isValid;
 dotenv.config();
@@ -51,7 +52,7 @@ export const authController = {
 
       // Check if user is banned
       if (user.status !== "active") {
-        res.status(403).send({ message: `Account ${user.status}`});
+        res.status(403).send({ message: `Account ${user.status}` });
         return;
       }
 
@@ -95,7 +96,9 @@ export const authController = {
         return;
       }
 
-      const existingUser = await UserModel.findOne({ email: email });
+      const existingUser = await UserModel.findOne({
+        $or: [{ email: email }, { phone_number: phone }],
+      });
       if (existingUser) {
         res.status(400).json({ message: "User already exists" });
         return;
@@ -111,11 +114,12 @@ export const authController = {
       });
 
       const otp = Math.floor(100000 + Math.random() * 900000);
-      const response = await sendOTP(email, otp.toString());
-      if (!response.success) {
-        res.status(500).json({ message: response.message });
-        return;
-      }
+      // const response = await sendOTP(email, otp.toString());
+      // if (!response.success) {
+      //   res.status(500).json({ message: response.message });
+      //   return;
+      // }
+      console.log("OTP: ", otp);
       await redisController.saveOtpToStore(email, otp.toString());
 
       await user.save();
@@ -181,6 +185,31 @@ export const authController = {
     } catch (error) {
       console.error("❌ Error in verifyOtp:", error);
       res.status(500).json({ message: "Internal Server Error" });
+    }
+  },
+
+  logoutUser: async (req: Request, res: Response) => {
+    try {
+      const token = req.headers.authorization?.split(" ")[1];
+      if (!token) {
+        return res.status(401).json({ message: "No token provided" });
+      }
+
+      const decoded = jwt.verify(token, token_secret!) as JwtPayload;
+
+      // Optional: ensure token belongs to a valid user
+      const user = await UserModel.findById(decoded.id);
+      if (!user) {
+        return res.status(401).json({ message: "Invalid token" });
+      }
+
+      // Add token to blacklist (if not using short token lifespans)
+      await tokenBlacklistSchema.create({ token, userId: user._id });
+
+      res.status(200).json({ message: "Logout successful" });
+    } catch (error) {
+      console.error("❌ Error in logout:", error);
+      res.status(500).json({ message: "Server error" });
     }
   },
 };

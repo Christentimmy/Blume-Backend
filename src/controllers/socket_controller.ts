@@ -2,13 +2,10 @@ import { Server, Socket } from "socket.io";
 import dotenv from "dotenv";
 import userSchema from "../models/user_model";
 import Message from "../models/message_model";
-import { checkMessageLimitSocket } from "../middlewares/socket_middleware";
 import { sendPushNotification, NotificationType } from "../config/onesignal";
-import DailyDmLog from "../models/dailydmlog_model";
-import planLimits from "../middlewares/plan_limit";
 import { encrypt, decrypt } from "../utils/encryption";
-import { Match } from "../models/match_model";
-import { MessageDocument } from "../models/message_model";
+import { IMessageDocument } from "../types/message_type";
+import { Block } from "../models/block_model";
 
 dotenv.config();
 
@@ -42,54 +39,27 @@ function sendMessage(
       }
 
       if (receiverId === senderId) {
+        console.error("You cannot send messages to yourself");
         return socket.emit("error", {
           message: "You cannot send messages to yourself.",
         });
       }
 
       const user = await userSchema.findById(senderId);
-
-      // Check if sender and receiver are a match
-      const isMatch = await Match.exists({
-        users: { $all: [user._id, receiverId] },
+      const blocked = await Block.findOne({
+        $or: [
+          { blocker: senderId, blocked: receiverId },
+          { blocker: receiverId, blocked: senderId },
+        ],
       });
 
-      // Check if user is on a free plan
-      const userPlan = user.plan || "free";
-      const isLimitedPlan = userPlan === "free";
-      const dailyDmLimit = planLimits[userPlan]?.messages || 0;
-
-      if (!isMatch && isLimitedPlan) {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        const alreadyMessaged = await DailyDmLog.findOne({
-          senderId,
-          receiverId,
-          date: today,
+      if (blocked) {
+        return socket.emit("blocked", {
+          message: "This user is blocked.",
         });
-
-        if (!alreadyMessaged) {
-          const count = await DailyDmLog.countDocuments({
-            senderId,
-            date: today,
-          });
-
-          if (count >= dailyDmLimit) {
-            return socket.emit("error", {
-              message: `You've reached your daily DM limit of ${dailyDmLimit}. Upgrade to message more people.`,
-            });
-          }
-
-          await DailyDmLog.create({
-            senderId,
-            receiverId,
-            date: today,
-          });
-        }
       }
 
-      var replyToMessage: MessageDocument = null;
+      var replyToMessage: IMessageDocument | null = null;
       if (replyToMessageId !== null && replyToMessageId !== undefined) {
         replyToMessage = await Message.findById(replyToMessageId);
       }
@@ -129,20 +99,20 @@ function sendMessage(
         mediaIv: mediaIv || null,
         status: "sent",
         clientGeneratedId: clientGeneratedId || null,
-        avater: user.avatar || null,
+        avater: user?.avatar || null,
         replyToMessage: replyToMessage || null,
         replyToMessageId: replyToMessageId || null,
         storyMediaUrl: storyMediaUrl || null,
       });
 
-      let decryptedReplyToMessage = replyToMessage;
+      let decryptedReplyToMessage: IMessageDocument | null = replyToMessage;
       if (
         decryptedReplyToMessage !== null &&
         decryptedReplyToMessage.mediaUrl !== null
       ) {
         decryptedReplyToMessage.mediaUrl = decrypt(
-          decryptedReplyToMessage.mediaUrl,
-          decryptedReplyToMessage.mediaIv
+          decryptedReplyToMessage.mediaUrl!,
+          decryptedReplyToMessage.mediaIv!
         );
       }
 
@@ -151,23 +121,23 @@ function sendMessage(
         decryptedReplyToMessage.message !== null
       ) {
         decryptedReplyToMessage.message = decrypt(
-          decryptedReplyToMessage.message,
-          decryptedReplyToMessage.iv
+          decryptedReplyToMessage.message!,
+          decryptedReplyToMessage.iv!
         );
       }
 
       let decryptedMessage = newMessage;
       if (decryptedMessage.mediaUrl !== null) {
         decryptedMessage.mediaUrl = decrypt(
-          decryptedMessage.mediaUrl,
-          decryptedMessage.mediaIv
+          decryptedMessage.mediaUrl!,
+          decryptedMessage.mediaIv!
         );
       }
 
       if (decryptedMessage.message !== null) {
         decryptedMessage.message = decrypt(
-          decryptedMessage.message,
-          decryptedMessage.iv
+          decryptedMessage.message!,
+          decryptedMessage.iv!
         );
       }
       if (
@@ -177,7 +147,7 @@ function sendMessage(
         decryptedMessage.multipleImages = decryptedMessage.multipleImages.map(
           (image) => ({
             ...image,
-            mediaUrl: decrypt(image.mediaUrl, image.mediaIv),
+            mediaUrl: decrypt(image.mediaUrl!, image.mediaIv!),
           })
         );
       }
@@ -193,8 +163,7 @@ function sendMessage(
           }));
       }
 
-      decryptedMessage.replyToMessage = decryptedReplyToMessage;
-      // Emit the message to the receiver if online
+      decryptedMessage.replyToMessageId = decryptedReplyToMessage!;
       const receiverSocketId = onlineUsers.get(receiverId);
       if (receiverSocketId) {
         io.to(receiverSocketId).emit("receive-message", decryptedMessage);
@@ -219,7 +188,7 @@ function sendMessage(
           receiverId,
           receiver.one_signal_id,
           NotificationType.MESSAGE,
-          `${socket.data.user.full_name} sent new message`
+          `${socket.data.user.displayName} sent new message`
         );
       }
     } catch (error) {
