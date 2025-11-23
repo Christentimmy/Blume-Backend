@@ -35,5 +35,6 @@ router.get("/get-user-notifications", userController.getUserNotifications);
 router.patch("/mark-notifications-read", userController.markNotificationsRead);
 router.get("/get-profile-stats", userController.getProfileStats);
 router.get("/get-user-with-id/:userId", userController.getUserWithId);
+router.get("/search-user", userController.searchUser);
 
 export default router;

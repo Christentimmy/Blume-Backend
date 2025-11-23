@@ -1108,4 +1108,43 @@ export const userController = {
       res.status(500).json({ message: "server error" });
     }
   },
+
+  searchUser: async (req: Request, res: Response) => {
+    try {
+      let { page = 1, limit = 40, search } = req.query;
+      if (!search || search === "") {
+        res.status(400).json({ message: "search is required" });
+        return;
+      }
+      page = Number(page);
+      limit = Number(limit);
+      const skip = (page - 1) * limit;
+      search = search.toString().toLowerCase();
+      const filter = {
+        $or: [
+          { "user.full_name": { $regex: search, $options: "i" } },
+          { "user.email": { $regex: search, $options: "i" } },
+        ],
+      };
+
+      const users = await UserModel.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
+
+      const totalUsers = await UserModel.countDocuments(filter);
+
+      res.status(200).json({
+        users,
+        page,
+        limit,
+        totalUsers,
+        totalPages: Math.ceil(totalUsers / limit),
+        hasNextPage: page * limit < totalUsers,
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  },
 };
