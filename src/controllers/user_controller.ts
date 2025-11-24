@@ -7,8 +7,6 @@ import Notification from "../models/notification_model";
 import { IUser } from "../types/user_type";
 import { sendPushNotification, NotificationType } from "../config/onesignal";
 
-// const isValidObjectId = mongoose.Types.ObjectId.isValid;
-
 export const userController = {
   updateName: async (req: Request, res: Response) => {
     try {
@@ -388,34 +386,110 @@ export const userController = {
         return;
       }
 
-      if (index !== undefined) {
-        const parsedIndex = parseInt(index);
-        if (isNaN(parsedIndex) || parsedIndex < 0 || parsedIndex > 5) {
-          res
-            .status(400)
-            .json({ message: "Invalid index. Must be between 0 and 5." });
-          return;
-        }
+      // if (index !== undefined) {
+      //   const parsedIndex = parseInt(index);
+      //   if (isNaN(parsedIndex) || parsedIndex < 0 || parsedIndex > 5) {
+      //     res
+      //       .status(400)
+      //       .json({ message: "Invalid index. Must be between 0 and 5." });
+      //     return;
+      //   }
 
-        // Replace existing photo at the specified index
-        user.photos[parsedIndex] = uploadedPhotos[0].path;
-      } else {
-        // Append new photos, but keep max 5
-        user.photos = [
-          ...user.photos,
-          ...uploadedPhotos.map((file) => file.path),
-        ].slice(0, 6);
-      }
+      //   // Replace existing photo at the specified index
+      //   user.photos[parsedIndex] = uploadedPhotos[0].path;
+      // } else {
+      //   // Append new photos, but keep max 5
+      //   user.photos = [
+      //     ...user.photos,
+      //     ...uploadedPhotos.map((file) => file.path),
+      //   ].slice(0, 6);
+      // }
 
       user.avatar = user.photos[0];
       await user.save();
 
       res.status(200).json({
-        message:
-          index !== undefined
-            ? "Photo replaced successfully"
-            : "Photos uploaded successfully",
+        message: "Photos uploaded successfully",
         photos: user.photos,
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Server error", error });
+    }
+  },
+
+  updateGallery: async (req: Request, res: Response) => {
+    try {
+      const userId = res.locals.userId;
+      if (!userId) {
+        res.status(401).json({ message: "Unauthorized" });
+        return;
+      }
+
+      const user = await UserModel.findById(userId);
+      if (!user) {
+        res.status(404).json({ message: "User not found" });
+        return;
+      }
+
+      const uploadedPhotos = (req.files as Express.Multer.File[]) || [];
+
+      let existingUrls: string[] = [];
+      let deletedUrls: string[] = [];
+
+      if (req.body.existingUrls) {
+        try {
+          if (typeof req.body.existingUrls === "string") {
+            existingUrls = JSON.parse(req.body.existingUrls);
+          } else {
+            existingUrls = req.body.existingUrls;
+          }
+        } catch {
+          existingUrls = Array.isArray(req.body.existingUrls)
+            ? req.body.existingUrls
+            : [];
+        }
+      }
+
+      if (req.body.deletedUrls) {
+        try {
+          if (typeof req.body.deletedUrls === "string") {
+            deletedUrls = JSON.parse(req.body.deletedUrls);
+          } else {
+            deletedUrls = req.body.deletedUrls;
+          }
+        } catch {
+          deletedUrls = Array.isArray(req.body.deletedUrls)
+            ? req.body.deletedUrls
+            : [];
+        }
+      }
+
+      const filteredExisting = existingUrls.filter(
+        (url) => !deletedUrls.includes(url)
+      );
+
+      const newPhotoUrls = uploadedPhotos.map(
+        (file) =>
+          // multer-storage-cloudinary exposes the Cloudinary URL on `path`
+          // fall back to secure_url if present
+          (file as any).path || (file as any).secure_url || file.filename
+      );
+
+      let finalPhotos = [...filteredExisting, ...newPhotoUrls];
+
+      // Enforce a maximum of 6 photos, consistent with uploadDatingPhotos
+      finalPhotos = finalPhotos.slice(0, 6);
+
+      user.photos = finalPhotos;
+      user.avatar = finalPhotos[0] || "";
+
+      await user.save();
+
+      res.status(200).json({
+        message: "Gallery updated successfully",
+        photos: user.photos,
+        avatar: user.avatar,
       });
     } catch (error) {
       console.error(error);
@@ -1116,14 +1190,18 @@ export const userController = {
         res.status(400).json({ message: "search is required" });
         return;
       }
+      console.log(req.query);
+
       page = Number(page);
       limit = Number(limit);
       const skip = (page - 1) * limit;
       search = search.toString().toLowerCase();
       const filter = {
+        status: "active",
+        userId: { $ne: res.locals.userId },
         $or: [
-          { "user.full_name": { $regex: search, $options: "i" } },
-          { "user.email": { $regex: search, $options: "i" } },
+          { full_name: { $regex: search, $options: "i" } },
+          { email: { $regex: search, $options: "i" } },
         ],
       };
 
@@ -1136,10 +1214,6 @@ export const userController = {
 
       res.status(200).json({
         users,
-        page,
-        limit,
-        totalUsers,
-        totalPages: Math.ceil(totalUsers / limit),
         hasNextPage: page * limit < totalUsers,
       });
     } catch (error) {

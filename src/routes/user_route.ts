@@ -36,5 +36,10 @@ router.patch("/mark-notifications-read", userController.markNotificationsRead);
 router.get("/get-profile-stats", userController.getProfileStats);
 router.get("/get-user-with-id/:userId", userController.getUserWithId);
 router.get("/search-user", userController.searchUser);
+router.put(
+  "/update-gallery",
+  uploadDatingPhotos.array("newFiles", 6),
+  userController.updateGallery
+);
 
 export default router;
