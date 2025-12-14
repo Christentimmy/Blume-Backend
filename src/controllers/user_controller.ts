@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import UserModel from "../models/user_model";
+import Verification from "../models/verification_model";
 import { Swipe } from "../models/swipe_model";
 import mongoose from "mongoose";
 import { Match } from "../models/match_model";
@@ -1218,6 +1219,74 @@ export const userController = {
       });
     } catch (error) {
       console.error(error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  },
+
+  applySelfieVerification: async (req: Request, res: Response) => {
+    try {
+      const user: IUser = res.locals.user;
+      if (!user) {
+        res.status(400).json({ message: "User Id not found" });
+        return;
+      }
+
+      if (!req.body || typeof req.body !== "object") {
+        res.status(400).json({ message: "Missing request body" });
+        return;
+      }
+
+      const { type } = req.body as { type?: string };
+      if (!type || !["government_id", "passport"].includes(type)) {
+        res.status(400).json({
+          message: "Invalid or missing verification type",
+        });
+        return;
+      }
+
+      const existing = await Verification.findOne({ user: user._id });
+      if (existing.status === "pending") {
+        res.status(400).json({ message: "Verification Request Pending" });
+        return;
+      }
+
+      if (existing.status === "approved") {
+        res.status(400).json({ message: "Verification Approved" });
+        return;
+      }
+
+      let files: Express.Multer.File[] = [];
+      if (Array.isArray(req.files)) {
+        files = req.files as Express.Multer.File[];
+      } else if (req.files && typeof req.files === "object") {
+        const fileMap = req.files as {
+          [fieldname: string]: Express.Multer.File[];
+        };
+        files = Object.values(fileMap).flat();
+      }
+
+      if (!files || files.length === 0) {
+        res.status(400).json({ message: "No verification images uploaded" });
+        return;
+      }
+
+      const documentUrls = files.map((file) => {
+        return (file as any).path || (file as any).secure_url || file.filename;
+      });
+
+      const verification = await Verification.create({
+        user: user._id,
+        type,
+        documents: documentUrls,
+        status: "pending",
+      });
+
+      res.status(201).json({
+        message: "Verification submitted successfully",
+        data: verification,
+      });
+    } catch (error) {
+      console.error("Error Applying Selfie Verification", error);
       res.status(500).json({ message: "Internal server error" });
     }
   },

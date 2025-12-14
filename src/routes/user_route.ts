@@ -3,6 +3,7 @@ import { userController } from "../controllers/user_controller";
 import tokenValidationMiddleware from "../middlewares/token_validator";
 import { uploadDatingPhotos } from "../middlewares/upload";
 import { statusChecker } from "../middlewares/status_middleware";
+import { uploadVerificationMedia } from "../middlewares/upload";
 
 const router = express.Router();
 
@@ -40,6 +41,12 @@ router.put(
   "/update-gallery",
   uploadDatingPhotos.array("newFiles", 6),
   userController.updateGallery
+);
+
+router.post(
+  "/apply-selfie-verification",
+  uploadVerificationMedia.array("files", 3),
+  userController.applySelfieVerification
 );
 
 export default router;

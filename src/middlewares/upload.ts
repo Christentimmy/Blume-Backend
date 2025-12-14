@@ -51,4 +51,26 @@ const uploadMessageMedia = multer({
     limits: { fileSize: 150 * 1024 * 1024 }
 });
 
-export { uploadDatingPhotos, uploadStoryMedia, uploadMessageMedia };
+// Storage for verification images (selfie + ID front/back)
+const verificationStorage = new CloudinaryStorage({
+    cloudinary,
+    params: async (req, file) => {
+        const isVideo = file.mimetype.startsWith("video/");
+        if (isVideo) {
+            // multer will surface this as an error
+            throw new Error("Video files are not allowed for verification");
+        }
+        return {
+            folder: "verification_media",
+            resource_type: "image",
+            public_id: `${Date.now()}-${file.originalname.split(".")[0]}`,
+        };
+    },
+});
+
+const uploadVerificationMedia = multer({
+    storage: verificationStorage,
+    limits: { fileSize: 15 * 1024 * 1024 }, // 15MB per file
+});
+
+export { uploadDatingPhotos, uploadStoryMedia, uploadMessageMedia, uploadVerificationMedia };
