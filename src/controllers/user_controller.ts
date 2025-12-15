@@ -1236,7 +1236,7 @@ export const userController = {
         return;
       }
 
-      const { type } = req.body as { type?: string };
+      const { type = "government_id" } = req.body as { type?: string };
       if (!type || !["government_id", "passport"].includes(type)) {
         res.status(400).json({
           message: "Invalid or missing verification type",
@@ -1245,14 +1245,16 @@ export const userController = {
       }
 
       const existing = await Verification.findOne({ user: user._id });
-      if (existing.status === "pending") {
-        res.status(400).json({ message: "Verification Request Pending" });
-        return;
-      }
+      if (existing) {
+        if (existing.status === "pending") {
+          res.status(400).json({ message: "Verification Request Pending" });
+          return;
+        }
 
-      if (existing.status === "approved") {
-        res.status(400).json({ message: "Verification Approved" });
-        return;
+        if (existing.status === "approved") {
+          res.status(400).json({ message: "Verification Approved" });
+          return;
+        }
       }
 
       let files: Express.Multer.File[] = [];
