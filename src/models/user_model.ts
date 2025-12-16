@@ -10,6 +10,10 @@ const UserSchema = new Schema<IUser>(
     avatar: { type: String, default: "" },
     bio: { type: String, default: "" },
     education: { type: String, default: "" },
+    stripeCustomerId: {
+      type: String,
+      default: "",
+    },
     // lifestyle: {
     //   smoking: { type: String, default: "" },
     //   drinking: { type: String, default: "" },

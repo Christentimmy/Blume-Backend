@@ -8,6 +8,7 @@ export interface IUser extends Document {
   avatar?: string;
   education: string;
   bio?: string;
+  stripeCustomerId: string;
   // lifestyle: {
   //   smoking: string;
   //   drinking: string;
