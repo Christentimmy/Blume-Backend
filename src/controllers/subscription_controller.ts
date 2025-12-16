@@ -32,13 +32,9 @@ export const subscriptionController = {
       }
 
       // Check for existing active subscription
-      const existingSubscription = await Subscription.findOne({
-        userId,
-        status: "active",
-        currentPeriodEnd: { $gt: new Date() },
-      });
+      const existingSubscription =  res.locals.subscription;
 
-      if (existingSubscription) {
+      if (existingSubscription.status === "active") {
         return res.status(400).json({
           message: "You already have an active subscription",
           subscription: existingSubscription,
