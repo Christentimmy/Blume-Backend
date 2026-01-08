@@ -3,23 +3,16 @@ import UserModel from "../models/user_model";
 import generateToken from "../utils/token_generator";
 import bcryptjs from "bcryptjs";
 import jwt, { JwtPayload } from "jsonwebtoken";
-import mongoose from "mongoose";
 import dotenv from "dotenv";
 import { sendOTP } from "../services/email_service";
 import { redisController } from "./redis_controller";
 import tokenBlacklistSchema from "../models/token_blacklist_model";
 
-const isValidObjectId = mongoose.Types.ObjectId.isValid;
 dotenv.config();
 const token_secret = process.env.JWT_SECRET;
 
 if (!token_secret) {
   throw new Error("TOKEN_SECRET is missing in .env");
-}
-
-interface DecodedToken extends JwtPayload {
-  id: string;
-  role: string;
 }
 
 export const authController = {
@@ -114,12 +107,12 @@ export const authController = {
       });
 
       const otp = Math.floor(100000 + Math.random() * 900000);
-      // const response = await sendOTP(email, otp.toString());
-      // if (!response.success) {
-      //   res.status(500).json({ message: response.message });
-      //   return;
-      // }
-      console.log("OTP: ", otp);
+      const response = await sendOTP(email, otp.toString());
+      if (!response.success) {
+        res.status(500).json({ message: response.message });
+        return;
+      }
+
       await redisController.saveOtpToStore(email, otp.toString());
 
       await user.save();
@@ -210,6 +203,77 @@ export const authController = {
     } catch (error) {
       console.error("❌ Error in logout:", error);
       res.status(500).json({ message: "Server error" });
+    }
+  },
+
+  changePassword: async (req: Request, res: Response) => {
+    try {
+      if (!req.body) {
+        res.status(404).json({ message: "Invalid Request" });
+        return;
+      }
+      const { old_password, new_password } = req.body;
+
+      if (!old_password || !new_password) {
+        res.status(404).json({ message: "Missing parameters" });
+        return;
+      }
+
+      const userId = res.locals.userId;
+
+      const user = await UserModel.findById(userId).select("+password");
+      if (!user) {
+        res.status(400).json({ message: "Invaid User" });
+        return;
+      }
+
+      const isPassword = await bcryptjs.compare(old_password, user.password);
+      if (!isPassword) {
+        res.status(400).json({ message: "Invalid Request" });
+        return;
+      }
+
+      const salt = await bcryptjs.genSalt(15);
+      const hashedPassword = await bcryptjs.hash(new_password, salt);
+
+      user.password = hashedPassword;
+      await user.save();
+
+      res.status(200).json({ message: "Successful" });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  },
+
+  resetPassword: async (req: Request, res: Response) => {
+    try {
+      if (!req.body) {
+        res.status(404).json({ message: "Invalid Request" });
+        return;
+      }
+      const { email, password } = req.body;
+      if (!email || !password) {
+        res.status(404).json({ message: "Missing Parameters" });
+        return;
+      }
+
+      const user = await UserModel.findOne({ email }).select("+password");
+      if (!user) {
+        res.status(404).json({ message: "User not found" });
+        return;
+      }
+
+      const salt = await bcryptjs.genSalt(15);
+      const hashedPassword = await bcryptjs.hash(password, salt);
+
+      user.password = hashedPassword;
+      await user.save();
+
+      res.status(200).json({ message: "Successful" });
+    } catch (error) {
+      console.log(error);
+      res.status(500).json({ message: "Internal server error" });
     }
   },
 };
