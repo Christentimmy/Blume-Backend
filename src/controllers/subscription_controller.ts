@@ -6,7 +6,6 @@ import {
   reactivateSubscription,
 } from "../services/stripe_service";
 import { PLANS } from "../config/subscription_plans";
-import Subscription from "../models/subscription_model";
 
 export const subscriptionController = {
   getPlans: async (req: Request, res: Response) => {
