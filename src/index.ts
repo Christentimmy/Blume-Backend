@@ -8,6 +8,7 @@ import storyRouter from "./routes/story_route";
 import messageRouter from "./routes/message_route";
 import subscriptionRouter from "./routes/subscription_routes";
 import boostRouter from "./routes/boost_route";
+import supportTicketRouter from "./routes/support_ticket_routes";
 
 import morgan from "morgan";
 import { setupSocket } from "./config/socket";
@@ -52,6 +53,7 @@ app.use("/api/story", storyRouter);
 app.use("/api/message", messageRouter);
 app.use("/api/subscriptions", subscriptionRouter);
 app.use("/api/boost", boostRouter);
+app.use("/api/support-ticket", supportTicketRouter);
 
 // Database Connection
 connectToDatabase();
