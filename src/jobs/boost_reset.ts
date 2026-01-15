@@ -18,7 +18,6 @@ const checkAndResetExpiredBoosts = async () => {
         },
       }
     );
-    console.log(`Reset ${result.modifiedCount} expired boosts`);
   } catch (error) {
     console.error("Error resetting expired boosts:", error);
   }

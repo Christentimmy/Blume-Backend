@@ -901,6 +901,7 @@ export const userController = {
             matchPercentage: 1,
             interested_in: 1,
             photos: 1,
+            isVerified: 1,
           },
         },
       ];
