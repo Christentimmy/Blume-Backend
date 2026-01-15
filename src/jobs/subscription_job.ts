@@ -22,7 +22,8 @@ function startSubscriptionJob() {
           // Update user's subscription status
           await User.findByIdAndUpdate(sub.userId, {
             'subscription.status': 'past_due',
-            'subscription.cancelAtPeriodEnd': false
+            'subscription.cancelAtPeriodEnd': false,
+            'plan': 'free',
           });
 
           await Subscription.deleteOne({ _id: sub._id });

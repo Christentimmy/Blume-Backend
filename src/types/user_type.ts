@@ -67,7 +67,13 @@ export interface IUser extends Document {
     | "new friends"
     | "short term fun"
     | "not sure yet";
-  plan: "free" | "basic" | "budget" | "premium";
+  plan: "free" | "subscribed";
+  boost: {
+    isActive: boolean;
+    expiresAt: Date;
+    boostType: "boost1" | "boost5" | "boost10";
+    boostMultiplier: { type: Number; default: 1.0 };
+  };
   daily_swipes: number;
   daily_messages: number;
   subscription: {

@@ -5,6 +5,8 @@ import { uploadDatingPhotos } from "../middlewares/upload";
 import { statusChecker } from "../middlewares/status_middleware";
 import { uploadVerificationMedia } from "../middlewares/upload";
 
+import { checkSwipeLimit } from "../middlewares/plan_limit";
+
 const router = express.Router();
 
 router.use(tokenValidationMiddleware);
@@ -28,7 +30,7 @@ router.patch("/update-location", userController.updateLocation);
 
 router.use(statusChecker);
 router.get("/get-potential-matches", userController.newGetPotentialMatches);
-router.post("/swipe-user", userController.swipeUser);
+router.post("/swipe-user", checkSwipeLimit, userController.swipeUser);
 router.post("/save-one-signal", userController.saveOneSignal);
 router.get("/get-matches", userController.getMatches);
 router.get("/get-users-who-liked-me", userController.getUsersWhoLikedMe);

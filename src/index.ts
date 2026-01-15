@@ -7,10 +7,12 @@ import userRouter from "./routes/user_route";
 import storyRouter from "./routes/story_route";
 import messageRouter from "./routes/message_route";
 import subscriptionRouter from "./routes/subscription_routes";
+import boostRouter from "./routes/boost_route";
 
 import morgan from "morgan";
 import { setupSocket } from "./config/socket";
 import { handleWebhook } from "./services/stripe_service";
+
 
 import bodyParser from "body-parser";
 import cors from "cors";
@@ -18,6 +20,7 @@ import cors from "cors";
 import "./jobs/cleanup_incomplete_subscriptions";
 import "./jobs/subscription_job";
 import "./jobs/daily_free_reset";
+import "./jobs/boost_reset";
 
 dotenv.config();
 const app = express();
@@ -47,7 +50,9 @@ app.use("/api/auth", authRouter);
 app.use("/api/user", userRouter);
 app.use("/api/story", storyRouter);
 app.use("/api/message", messageRouter);
-app.use("/api/subscription", subscriptionRouter);
+app.use("/api/subscriptions", subscriptionRouter);
+app.use("/api/boost", boostRouter);
+
 // Database Connection
 connectToDatabase();
 

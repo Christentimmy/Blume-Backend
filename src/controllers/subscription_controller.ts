@@ -136,14 +136,14 @@ export const subscriptionController = {
   success: async (req: Request, res: Response) => {
     // res.send({ success: true, message: "Payment successful" });
     // console.log("Payment successful");
-    const redirecUrl = "falangthai://payment-success";
+    const redirecUrl = "blume://payment-success";
     res.redirect(redirecUrl);
     return;
   },
 
   cancelled: async (req: Request, res: Response) => {
     // res.send({ success: true, message: "Payment cancelled" });
-    const redirecUrl = "falangthai://payment-cancelled";
+    const redirecUrl = "blume://payment-cancelled";
     res.redirect(redirecUrl);
     return;
   },

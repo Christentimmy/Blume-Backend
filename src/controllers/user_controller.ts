@@ -869,7 +869,24 @@ export const userController = {
             relationship_preference: user.relationship_preference,
           },
         },
-        { $sort: { matchPercentage: -1 } },
+        {
+          $addFields: {
+            // Add a boost score that will be used for sorting
+            boostScore: {
+              $cond: [
+                {
+                  $and: [
+                    "$boost.isActive",
+                    { $gt: ["$boost.expiresAt", new Date()] },
+                  ],
+                },
+                "$boost.boostMultiplier",
+                1.0, // Default score for non-boosted users
+              ],
+            },
+          },
+        },
+        { $sort: { boostScore: -1, matchPercentage: -1 } },
         { $skip: skip },
         { $limit: limit },
         {

@@ -3,8 +3,8 @@ import dotenv from "dotenv";
 import User from "../models/user_model";
 import Subscription from "../models/subscription_model";
 // import Commission from "../models/commission_model";
-import { PLANS } from "../config/subscription_plans";
-// import { REFERRAL_CONFIG, calculateCommission } from "../config/rewards";
+import { PLANS, BOOST_PLANS } from "../config/subscription_plans";
+import { boostController } from "../controllers/boost_controller";
 import { Request, Response } from "express";
 import mongoose from "mongoose";
 
@@ -41,6 +41,45 @@ export const createStripeCustomer = async (user: any) => {
   return customer;
 };
 
+export const createBoostCheckoutSession = async (
+  userId: string,
+  boostType: string
+) => {
+  const user = await User.findById(userId);
+  if (!user) throw new Error("User not found");
+
+  let customerId = user.stripeCustomerId;
+  if (!customerId) {
+    const customer = await createStripeCustomer(user);
+    customerId = customer.id;
+    user.stripeCustomerId = customer.id;
+    await user.save();
+  }
+
+  const boostPlan = BOOST_PLANS[boostType as keyof typeof BOOST_PLANS];
+
+  const session = await stripe.checkout.sessions.create({
+    customer: customerId,
+    payment_method_types: ["card"],
+    line_items: [
+      {
+        price: boostPlan.stripePriceId,
+        quantity: 1,
+      },
+    ],
+    mode: "payment",
+    success_url: `${clientUrl}/api/subscriptions/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${clientUrl}/api/subscriptions/canceled`,
+    metadata: {
+      userId: user._id.toString(),
+      type: "boost",
+      boostType,
+    },
+  });
+
+  return session;
+};
+
 export const createCheckoutSession = async (userId: string, planId: string) => {
   const plan = Object.values(PLANS).find((p) => p.id === planId);
   if (!plan) throw new Error("Plan not found");
@@ -66,8 +105,8 @@ export const createCheckoutSession = async (userId: string, planId: string) => {
       },
     ],
     mode: "subscription",
-    success_url: `${clientUrl}/api/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${clientUrl}/api/subscription/canceled`,
+    success_url: `${clientUrl}/api/subscriptions/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${clientUrl}/api/subscriptions/canceled`,
     metadata: {
       userId: user._id.toString(),
       planId: plan.id,
@@ -147,15 +186,22 @@ export const handleWebhook = async (req: Request, res: Response) => {
   // Use a transaction to ensure data consistency
   const session = await mongoose.startSession();
   session.startTransaction();
-
-  console.log("event", event.type);
+  console.log("Webhook event type:", event.type);
 
   try {
     switch (event.type) {
       case "checkout.session.completed":
-        await handleCheckoutCompleted(
-          event.data.object as Stripe.Checkout.Session
-        );
+        const session = event.data.object as Stripe.Checkout.Session;
+        if (session.metadata?.type === "boost") {
+          // Handle boost payment success
+          const { userId, boostType } = session.metadata;
+          await boostController.completeBoostPayment(boostType, userId);
+        } else {
+          await handleCheckoutCompleted(
+            event.data.object as Stripe.Checkout.Session
+          );
+        }
+
         break;
 
       case "customer.subscription.created":
@@ -287,6 +333,7 @@ const handleSubscriptionUpdated = async (subscription: Stripe.Subscription) => {
           data.current_period_end * 1000
         ),
         "subscription.cancelAtPeriodEnd": subscription.cancel_at_period_end,
+        plan: "subscribed",
       },
     }
   );
@@ -341,7 +388,7 @@ const handlePaymentSucceeded = async (invoice: any) => {
     await handleSubscriptionUpdated(subscription);
     // await handleReferralCommission(invoice, subscription);
   } catch (error) {
-    console.error("Error in handlePaymentSucceeded:", error);
+    console.error("Error in handlePaymentSucceede:", error);
   }
 };
 

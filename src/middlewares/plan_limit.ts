@@ -2,12 +2,12 @@
 import { Request, Response, NextFunction } from "express";
 import User from "../models/user_model";
 
-const planLimits = {
-    free: { swipes: 10, messages: 5 },
-    basic: { swipes: 40, messages: 10 },
-    budget: { swipes: 100, messages: 20 },
-    premium: { swipes: 140, messages: 20 },
-};
+// const planLimits = {
+//     free: { swipes: 10, messages: 5 },
+//     basic: { swipes: 40, messages: 10 },
+//     budget: { swipes: 100, messages: 20 },
+//     premium: { swipes: 140, messages: 20 },
+// };
 
 export const checkSwipeLimit = async (req: Request, res: Response, next: NextFunction) => {
     const userId = res.locals.userId;
@@ -18,12 +18,12 @@ export const checkSwipeLimit = async (req: Request, res: Response, next: NextFun
         return;
     }
 
-    if (user.plan === "premium") {
+    if (user.plan === "subscribed") {
         next();
         return;
     }
 
-    if (user.daily_swipes >= planLimits[user.plan].swipes) {
+    if (user.daily_swipes >= 10) {
         res.status(403).json({ message: "Swipe limit reached for today." });
         return;
     }
@@ -56,4 +56,4 @@ export const checkSwipeLimit = async (req: Request, res: Response, next: NextFun
 //     next();
 // };
 
-export default planLimits;
+// export default planLimits;

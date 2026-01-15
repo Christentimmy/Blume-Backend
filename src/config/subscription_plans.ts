@@ -5,7 +5,10 @@ if (
   !process.env.BLUME1WEEKPRICEID ||
   !process.env.BLUME1MONTHPRICEID ||
   !process.env.BLUME3MONTHPRICEID ||
-  !process.env.BLUME1YEARPRICEID
+  !process.env.BLUME1YEARPRICEID ||
+  !process.env.BOOST_1_PRICE_ID ||
+  !process.env.BOOST_5_PRICE_ID ||
+  !process.env.BOOST_10_PRICE_ID 
 ) {
   throw new Error("Please add the subscription plans to the .env file");
 }
@@ -91,5 +94,36 @@ export const PLANS = {
     limits: {
       superLikesPerDay: 5,
     },
+  },
+} as const;
+
+
+export const BOOST_PLANS = {
+  'boost1': {
+    id: 'boost1',
+    name: '1',
+    price: 4.99,
+    currency: 'USD',
+    stripePriceId: process.env.BOOST_1_PRICE_ID!,
+    duration: 30 * 60 * 1000,
+    multiplier: 10
+  },
+  'boost5': {
+    id: 'boost5',
+    name: '5',
+    price: 7.99,
+    currency: 'USD',
+    stripePriceId: process.env.BOOST_5_PRICE_ID!,
+    duration: 30 * 60 * 1000, 
+    multiplier: 50
+  },
+  'boost10': {
+    id: 'boost10',
+    name: '10',
+    price: 14.99,
+    currency: 'USD',
+    stripePriceId: process.env.BOOST_10_PRICE_ID!,
+    duration: 30 * 60 * 1000, 
+    multiplier: 100
   },
 } as const;

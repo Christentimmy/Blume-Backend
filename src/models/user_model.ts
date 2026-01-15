@@ -91,6 +91,13 @@ const UserSchema = new Schema<IUser>(
     },
     daily_swipes: { type: Number, default: 0 },
     daily_messages: { type: Number, default: 0 },
+    plan: { type: String, enum: ["free", "subscribed"], default: "free" },
+    boost: {
+      isActive: { type: Boolean, default: false },
+      expiresAt: { type: Date },
+      boostType: { type: String, enum: ["boost1", "boost5", "boost10"], default: null },
+      boostMultiplier: { type: Number, default: 1.0 }
+    },
     subscription: {
       planId: { type: String },
       status: {

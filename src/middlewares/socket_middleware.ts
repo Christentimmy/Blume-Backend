@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import { Socket } from "socket.io";
 import userSchema from "../models/user_model";
-import planLimits from "./plan_limit";
+// import planLimits from "./plan_limit";
 import { Match } from "../models/match_model";
 import Message from "../models/message_model";
 
@@ -51,7 +51,7 @@ export const checkMessageLimitSocket = async (
     if (!user) return true; // Block if user not found
 
     // Premium users bypass limits
-    if (user.plan === "premium") return false;
+    if (user.plan === "subscribed") return false;
 
     // ✅ Check if sender and receiver are matched
     const isMatch = await Match.exists({
@@ -68,7 +68,7 @@ export const checkMessageLimitSocket = async (
 
     // If not a match and no previous messages, enforce daily limit
     if (!isMatch && existingMessages === 0) {
-      if (user.daily_messages >= planLimits[user.plan].messages) {
+      if (user.daily_messages >= 10) {
         return true; // Limit reached
       }
 
