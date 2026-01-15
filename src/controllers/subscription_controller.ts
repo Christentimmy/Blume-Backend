@@ -34,7 +34,7 @@ export const subscriptionController = {
       // Check for existing active subscription
       const existingSubscription =  res.locals.subscription;
 
-      if (existingSubscription.status === "active") {
+      if (existingSubscription && existingSubscription.status === "active") {
         return res.status(400).json({
           message: "You already have an active subscription",
           subscription: existingSubscription,

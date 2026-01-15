@@ -148,7 +148,7 @@ export const handleWebhook = async (req: Request, res: Response) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
-  // console.log("event", event.type);
+  console.log("event", event.type);
 
   try {
     switch (event.type) {
