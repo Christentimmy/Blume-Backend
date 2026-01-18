@@ -141,9 +141,9 @@ export const authController = {
         return;
       }
 
-      const otp = Math.floor(1000 + Math.random() * 9000).toString();
-      await redisController.saveOtpToStore(email, otp);
-      await sendOTP(email, otp);
+      const otp = Math.floor(100000 + Math.random() * 900000);
+      await redisController.saveOtpToStore(email, otp.toString());
+      await sendOTP(email, otp.toString());
 
       res.status(200).json({ message: "OTP sent" });
     } catch (error) {
