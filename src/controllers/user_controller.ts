@@ -380,10 +380,15 @@ export const userController = {
       }
 
       const uploadedPhotos = req.files as Express.Multer.File[];
-      const { index } = req.body;
+      // const { index } = req.body;
 
       if (!uploadedPhotos || uploadedPhotos.length === 0) {
         res.status(400).json({ message: "No photos uploaded" });
+        return;
+      }
+
+      if (uploadedPhotos.length > 6) {
+        res.status(400).json({ message: "Too many photos uploaded" });
         return;
       }
 
@@ -407,6 +412,7 @@ export const userController = {
       // }
 
       user.avatar = user.photos[0];
+      user.photos = uploadedPhotos.map((file) => file.path);
       await user.save();
 
       res.status(200).json({
