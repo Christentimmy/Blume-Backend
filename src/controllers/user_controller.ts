@@ -486,7 +486,7 @@ export const userController = {
       let finalPhotos = [...filteredExisting, ...newPhotoUrls];
 
       // Enforce a maximum of 6 photos, consistent with uploadDatingPhotos
-      finalPhotos = finalPhotos.slice(0, 6);
+      finalPhotos = finalPhotos.slice(0, 12);
 
       user.photos = finalPhotos;
       user.avatar = finalPhotos[0] || "";
@@ -1255,19 +1255,6 @@ export const userController = {
         return;
       }
 
-      if (!req.body || typeof req.body !== "object") {
-        res.status(400).json({ message: "Missing request body" });
-        return;
-      }
-
-      const { type = "government_id" } = req.body as { type?: string };
-      if (!type || !["government_id", "passport"].includes(type)) {
-        res.status(400).json({
-          message: "Invalid or missing verification type",
-        });
-        return;
-      }
-
       const existing = await Verification.findOne({ user: user._id });
       if (existing) {
         if (existing.status === "pending") {
@@ -1281,29 +1268,28 @@ export const userController = {
         }
       }
 
-      let files: Express.Multer.File[] = [];
-      if (Array.isArray(req.files)) {
-        files = req.files as Express.Multer.File[];
-      } else if (req.files && typeof req.files === "object") {
-        const fileMap = req.files as {
-          [fieldname: string]: Express.Multer.File[];
-        };
-        files = Object.values(fileMap).flat();
-      }
+      // let files: Express.Multer.File[] = [];
+      // if (Array.isArray(req.files)) {
+      //   files = req.files as Express.Multer.File[];
+      // } else if (req.files && typeof req.files === "object") {
+      //   const fileMap = req.files as {
+      //     [fieldname: string]: Express.Multer.File[];
+      //   };
+      //   files = Object.values(fileMap).flat();
+      // }
 
-      if (!files || files.length === 0) {
-        res.status(400).json({ message: "No verification images uploaded" });
-        return;
-      }
+      // if (!files || files.length === 0) {
+      //   res.status(400).json({ message: "No verification images uploaded" });
+      //   return;
+      // }
 
-      const documentUrls = files.map((file) => {
-        return (file as any).path || (file as any).secure_url || file.filename;
-      });
+      // const documentUrls = files.map((file) => {
+      //   return (file as any).path || (file as any).secure_url || file.filename;
+      // });
 
       const verification = await Verification.create({
         user: user._id,
-        type,
-        documents: documentUrls,
+        document: req.file.path,
         status: "pending",
       });
 

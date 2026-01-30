@@ -23,7 +23,7 @@ router.patch("/update-basic", userController.updateBasic);
 router.patch("/update-basic-2", userController.updateBasic2);
 router.post(
   "/upload-dating-photos",
-  uploadDatingPhotos.array("photos", 6),
+  uploadDatingPhotos.array("photos", 12),
   userController.uploadDatingPhotos
 );
 router.patch("/update-location", userController.updateLocation);
@@ -41,13 +41,13 @@ router.get("/get-user-with-id/:userId", userController.getUserWithId);
 router.get("/search-user", userController.searchUser);
 router.put(
   "/update-gallery",
-  uploadDatingPhotos.array("newFiles", 6),
+  uploadDatingPhotos.array("newFiles", 12),
   userController.updateGallery
 );
 
 router.post(
   "/apply-selfie-verification",
-  uploadVerificationMedia.array("files", 3),
+  uploadVerificationMedia.single("media"),
   userController.applySelfieVerification
 );
 

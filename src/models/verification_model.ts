@@ -3,7 +3,7 @@ import mongoose, { Document, Schema } from "mongoose";
 export interface IVerification extends Document {
   user: mongoose.Types.ObjectId;
   type: "government_id" | "passport";
-  documents: string[];
+  document: string;
   status: "pending" | "approved" | "rejected";
   reason?: string;
   createdAt: Date;
@@ -19,16 +19,11 @@ const VerificationSchema = new Schema<IVerification>(
     },
     type: {
       type: String,
-      enum: ["government_id", "passport"],
-      required: true,
+      enum: ["government_id", "passport"]
     },
-    documents: {
-      type: [String],
-      required: true,
-      validate: {
-        validator: (v: string[]) => Array.isArray(v) && v.length > 0,
-        message: "At least one document URL is required",
-      },
+    document: {
+      type: String,
+      required: true
     },
     status: {
       type: String,

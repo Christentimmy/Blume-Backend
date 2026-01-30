@@ -55,14 +55,9 @@ const uploadMessageMedia = multer({
 const verificationStorage = new CloudinaryStorage({
     cloudinary,
     params: async (req, file) => {
-        const isVideo = file.mimetype.startsWith("video/");
-        if (isVideo) {
-            // multer will surface this as an error
-            throw new Error("Video files are not allowed for verification");
-        }
         return {
             folder: "verification_media",
-            resource_type: "image",
+            resource_type: "auto",
             public_id: `${Date.now()}-${file.originalname.split(".")[0]}`,
         };
     },
@@ -70,7 +65,7 @@ const verificationStorage = new CloudinaryStorage({
 
 const uploadVerificationMedia = multer({
     storage: verificationStorage,
-    limits: { fileSize: 15 * 1024 * 1024 }, // 15MB per file
+    limits: { fileSize: 30 * 1024 * 1024 }, // 15MB per file
 });
 
 const supportTicketStorage = new CloudinaryStorage({
