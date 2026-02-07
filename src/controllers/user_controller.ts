@@ -275,7 +275,7 @@ export const userController = {
       }
       if (languages && languages.length > 0) {
         const lowerCaseLanguages = languages.map((lang: string) =>
-          lang.toLowerCase()
+          lang.toLowerCase(),
         );
         user.basics.languages = lowerCaseLanguages;
       }
@@ -311,49 +311,49 @@ export const userController = {
       }
       if (lifestyleAndValues) {
         const lowerCaseLifestyleAndValues = lifestyleAndValues.map(
-          (value: string) => value.toLowerCase()
+          (value: string) => value.toLowerCase(),
         );
         user.basics.lifestyleAndValues = lowerCaseLifestyleAndValues;
       }
       if (hobbies) {
         const lowerCaseHobbies = hobbies.map((hobby: string) =>
-          hobby.toLowerCase()
+          hobby.toLowerCase(),
         );
         user.basics.hobbies = lowerCaseHobbies;
       }
       if (artsAndCreativity) {
         const lowerCaseArtsAndCreativity = artsAndCreativity.map(
-          (value: string) => value.toLowerCase()
+          (value: string) => value.toLowerCase(),
         );
         user.basics.artsAndCreativity = lowerCaseArtsAndCreativity;
       }
       if (sportsAndFitness) {
         const lowerCaseSportsAndFitness = sportsAndFitness.map(
-          (value: string) => value.toLowerCase()
+          (value: string) => value.toLowerCase(),
         );
         user.basics.sportsAndFitness = lowerCaseSportsAndFitness;
       }
       if (travelAndAdventure) {
         const lowerCaseTravelAndAdventure = travelAndAdventure.map(
-          (value: string) => value.toLowerCase()
+          (value: string) => value.toLowerCase(),
         );
         user.basics.travelAndAdventure = lowerCaseTravelAndAdventure;
       }
       if (entertainment) {
         const lowerCaseEntertainment = entertainment.map((value: string) =>
-          value.toLowerCase()
+          value.toLowerCase(),
         );
         user.basics.entertainment = lowerCaseEntertainment;
       }
       if (music) {
         const lowerCaseMusic = music.map((value: string) =>
-          value.toLowerCase()
+          value.toLowerCase(),
         );
         user.basics.music = lowerCaseMusic;
       }
       if (foodAndDrink) {
         const lowerCaseFoodAndDrink = foodAndDrink.map((value: string) =>
-          value.toLowerCase()
+          value.toLowerCase(),
         );
         user.basics.foodAndDrink = lowerCaseFoodAndDrink;
       }
@@ -473,14 +473,14 @@ export const userController = {
       }
 
       const filteredExisting = existingUrls.filter(
-        (url) => !deletedUrls.includes(url)
+        (url) => !deletedUrls.includes(url),
       );
 
       const newPhotoUrls = uploadedPhotos.map(
         (file) =>
           // multer-storage-cloudinary exposes the Cloudinary URL on `path`
           // fall back to secure_url if present
-          (file as any).path || (file as any).secure_url || file.filename
+          (file as any).path || (file as any).secure_url || file.filename,
       );
 
       let finalPhotos = [...filteredExisting, ...newPhotoUrls];
@@ -632,7 +632,7 @@ export const userController = {
       await Swipe.findOneAndUpdate(
         { userId, targetUserId },
         { type },
-        { new: true, upsert: true }
+        { new: true, upsert: true },
       );
 
       if (type === "like" || type === "superlike") {
@@ -649,7 +649,7 @@ export const userController = {
             targetUserId,
             targetUser.one_signal_id,
             NotificationType.MATCH,
-            "It's a match! 🎉"
+            "It's a match! 🎉",
           );
 
           return res.status(200).json({
@@ -725,7 +725,7 @@ export const userController = {
               userQuery["user.basics.education"] = {
                 $regex: user.basics.education.replace(
                   /[.*+?^${}()|[\]\\]/g,
-                  "\\$&"
+                  "\\$&",
                 ),
                 $options: "i",
               };
@@ -743,7 +743,7 @@ export const userController = {
               userQuery["user.basics.religion"] = {
                 $regex: user.basics.religion.replace(
                   /[.*+?^${}()|[\]\\]/g,
-                  "\\$&"
+                  "\\$&",
                 ),
                 $options: "i",
               };
@@ -754,7 +754,7 @@ export const userController = {
               userQuery["user.basics.occupation"] = {
                 $regex: user.basics.occupation.replace(
                   /[.*+?^${}()|[\]\\]/g,
-                  "\\$&"
+                  "\\$&",
                 ),
                 $options: "i",
               };
@@ -971,7 +971,7 @@ export const userController = {
               userQuery["user.basics.education"] = {
                 $regex: user.basics.education.replace(
                   /[.*+?^${}()|[\]\\]/g,
-                  "\\$&"
+                  "\\$&",
                 ),
                 $options: "i",
               };
@@ -989,7 +989,7 @@ export const userController = {
               userQuery["user.basics.religion"] = {
                 $regex: user.basics.religion.replace(
                   /[.*+?^${}()|[\]\\]/g,
-                  "\\$&"
+                  "\\$&",
                 ),
                 $options: "i",
               };
@@ -1000,7 +1000,7 @@ export const userController = {
               userQuery["user.basics.occupation"] = {
                 $regex: user.basics.occupation.replace(
                   /[.*+?^${}()|[\]\\]/g,
-                  "\\$&"
+                  "\\$&",
                 ),
                 $options: "i",
               };
@@ -1112,7 +1112,7 @@ export const userController = {
 
       await Notification.updateMany(
         { _id: { $in: notificationIds }, userId },
-        { $set: { isRead: true } }
+        { $set: { isRead: true } },
       );
 
       res.status(200).json({ message: "Notifications marked as read" });
@@ -1300,6 +1300,37 @@ export const userController = {
     } catch (error) {
       console.error("Error Applying Selfie Verification", error);
       res.status(500).json({ message: "Internal server error" });
+    }
+  },
+
+  getPeopleOfInterest: async (req: Request, res: Response) => {
+    try {
+      const { interest } = req.body;
+      if (!interest) {
+        res.status(400).json({ message: "Interest is required" });
+        return;
+      }
+      const users = await UserModel.find({
+        $or: [
+          { "basics.lifestyleAndValues": { $in: [interest] } },
+          { "basics.hobbies": { $in: [interest] } },
+          { "basics.artsAndCreativity": { $in: [interest] } },
+          { "basics.sportsAndFitness": { $in: [interest] } },
+          { "basics.travelAndAdventure": { $in: [interest] } },
+          { "basics.entertainment": { $in: [interest] } },
+          { "basics.music": { $in: [interest] } },
+          { "basics.foodAndDrink": { $in: [interest] } },
+        ],
+        status: "active",
+        _id: { $ne: res.locals.userId },
+      });
+      res.status(200).json({
+        message: "People of interest retrieved successfully",
+        data: users,
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Internal Server Error" });
     }
   },
 };

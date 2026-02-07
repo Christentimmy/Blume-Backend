@@ -51,4 +51,6 @@ router.post(
   userController.applySelfieVerification
 );
 
+router.post("/get-people-of-interest", userController.getPeopleOfInterest);
+
 export default router;

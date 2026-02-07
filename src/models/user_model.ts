@@ -95,8 +95,12 @@ const UserSchema = new Schema<IUser>(
     boost: {
       isActive: { type: Boolean, default: false },
       expiresAt: { type: Date },
-      boostType: { type: String, enum: ["boost1", "boost5", "boost10"], default: null },
-      boostMultiplier: { type: Number, default: 1.0 }
+      boostType: {
+        type: String,
+        enum: ["boost1", "boost5", "boost10"],
+        default: null,
+      },
+      boostMultiplier: { type: Number, default: 1.0 },
     },
     subscription: {
       planId: { type: String },
@@ -116,7 +120,7 @@ const UserSchema = new Schema<IUser>(
       cancelAtPeriodEnd: { type: Boolean, default: false },
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 UserSchema.index({ location: "2dsphere" });
