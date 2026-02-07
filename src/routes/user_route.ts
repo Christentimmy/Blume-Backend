@@ -52,5 +52,6 @@ router.post(
 );
 
 router.post("/get-people-of-interest", userController.getPeopleOfInterest);
+router.post("/get-people-of-relationship-preference", userController.getPeopleOfRelationshipPreference);
 
 export default router;

@@ -1333,4 +1333,29 @@ export const userController = {
       res.status(500).json({ message: "Internal Server Error" });
     }
   },
+
+  getPeopleOfRelationshipPreference: async (req: Request, res: Response) => {
+    try {
+      const { preference } = req.body;
+      if (!preference) {
+        res.status(400).json({ message: "Preference is required" });
+        return;
+      }
+      const users = await UserModel.find({
+        $or: [
+          { relationship_preference: { $regex: preference, $options: "i" } },
+          { gender: { $regex: preference, $options: "i" } },
+        ],
+        status: "active",
+        _id: { $ne: res.locals.userId },
+      });
+      res.status(200).json({
+        message: "People of relationship interest retrieved successfully",
+        data: users,
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  },
 };

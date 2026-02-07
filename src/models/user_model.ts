@@ -40,11 +40,30 @@ const UserSchema = new Schema<IUser>(
       music: { type: [String], default: [] },
       foodAndDrink: { type: [String], default: [] },
     },
-    gender: { type: String, enum: ["male", "female", "others"] },
+    gender: {
+      type: String,
+      enum: [
+        "male",
+        "female",
+        "others",
+        "gay",
+        "lesbian",
+        "transgender",
+        "queer",
+      ],
+    },
     showGender: { type: Boolean, default: true },
     interested_in: {
       type: String,
-      enum: ["male", "female", "both"],
+      enum: [
+        "male",
+        "female",
+        "both",
+        "gay",
+        "lesbian",
+        "transgender",
+        "queer",
+      ],
     },
     date_of_birth: { type: Date },
     location: {
