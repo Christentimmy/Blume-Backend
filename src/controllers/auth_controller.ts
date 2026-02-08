@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import UserModel from "../models/user_model";
-import generateToken from "../utils/token_generator";
+import { generateToken } from "../utils/token_generator";
 import bcryptjs from "bcryptjs";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import dotenv from "dotenv";

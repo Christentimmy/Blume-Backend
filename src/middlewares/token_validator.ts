@@ -8,9 +8,11 @@ dotenv.config();
 
 const token_secret = process.env.JWT_SECRET;
 const isValidObjectId = mongoose.Types.ObjectId.isValid;
+
 if (!token_secret) {
     throw new Error("TOKEN_SECRET is not defined in the environment variables.");
 }
+
 interface DecodedToken extends JwtPayload {
     id: string;
     role: string;

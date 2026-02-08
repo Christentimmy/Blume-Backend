@@ -54,7 +54,7 @@ export interface IUser extends Document {
   is_phone_number_verified: boolean;
   is_premium: boolean;
   profile_completed: boolean;
-  role: "user" | "super_admin" | "sub_admin" | "staff";
+  role: "user" | "super_admin" | "admin" | "staff";
   status: "active" | "inactive" | "banned" | "blocked" | "deleted";
   last_active: Date;
   created_at: Date;
@@ -89,4 +89,6 @@ export interface IUser extends Document {
     cancelAtPeriodEnd: boolean;
   };
   isVerified: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }

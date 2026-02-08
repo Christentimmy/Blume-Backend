@@ -9,6 +9,7 @@ import messageRouter from "./routes/message_route";
 import subscriptionRouter from "./routes/subscription_routes";
 import boostRouter from "./routes/boost_route";
 import supportTicketRouter from "./routes/support_ticket_routes";
+import adminRouter from "./routes/admin_route";
 
 import morgan from "morgan";
 import { setupSocket } from "./config/socket";
@@ -31,7 +32,7 @@ app.set("trust proxy", 1);
 
 app.use(
   cors({
-    origin: ["http://localhost:5173", ""],
+    origin: ["http://localhost:5173", "http://localhost:8080"],
     credentials: true,
   })
 );
@@ -54,6 +55,8 @@ app.use("/api/message", messageRouter);
 app.use("/api/subscriptions", subscriptionRouter);
 app.use("/api/boost", boostRouter);
 app.use("/api/support-ticket", supportTicketRouter);
+app.use("/api/admin", adminRouter);
+
 
 // Database Connection
 connectToDatabase();
