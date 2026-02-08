@@ -8,6 +8,7 @@ import VerificationSchema from "../models/verification_model";
 import { IUser } from "../types/user_type";
 import tokenBlacklistSchema from "../models/token_blacklist_model";
 import { JwtPayload } from "jsonwebtoken";
+import VerificationModel, { IVerification } from "../models/verification_model";
 
 export const adminController = {
   createAdmin: async (req: Request, res: Response) => {
@@ -254,6 +255,90 @@ export const adminController = {
     } catch (error) {
       res.status(500).json({ message: "Internal server error" });
       console.error("Error updating user status:", error);
+    }
+  },
+
+  getAllMatches: async (req: Request, res: Response) => {
+    try {
+      const matches = await Match.find()
+        .populate("users", "full_name email photos avatar")
+        .sort({ createdAt: -1 });
+
+      const data = matches.map((match) => ({
+        _id: match._id,
+        avatar1: (match.users[0] as IUser)?.avatar,
+        avatar2: (match.users[1] as IUser)?.avatar,
+        full_name1: (match.users[0] as IUser)?.full_name,
+        full_name2: (match.users[1] as IUser)?.full_name,
+        createdAt: match.createdAt,
+      }));
+
+      res.status(200).json({
+        message: "Matches retrieved successfully",
+        data: data,
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  },
+
+  getAllPendingVerification: async (req: Request, res: Response) => {
+    try {
+      const users: IVerification[] = await VerificationModel.find({
+        status: "pending",
+      })
+        .populate("user", "full_name email photos avatar")
+        .sort({ createdAt: -1 });
+
+      const data = users.map((user: IVerification & { user: IUser }) => ({
+        _id: user._id,
+        document: user.document,
+        status: user.status,
+        reason: user.reason,
+        userId: user.user._id,
+        full_name: user.user.full_name,
+        email: user.user.email,
+        avatar: user.user.avatar,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      }));
+      
+      res.status(200).json({
+        message: "Users retrieved successfully",
+        data: data,
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  },
+
+  updateVerification: async (req: Request, res: Response) => {
+    try {
+      const { id, status, reason } = req.body;
+      if (!id || !status) {
+        res.status(400).json({ message: "User ID and status are required" });
+        return;
+      }
+
+      const verification = await VerificationModel.findById(id);
+      if (!verification) {
+        res.status(404).json({ message: "Verification not found" });
+        return;
+      }
+
+      if (!["approved", "rejected"].includes(status)) {
+        res.status(400).json({ message: "Invalid status" });
+        return;
+      }
+
+      verification.status = status;
+      verification.reason = reason;
+      await verification.save();
+
+      res.status(200).json({ message: "Verification updated successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
+      console.error("Error updating verification:", error);
     }
   },
 };

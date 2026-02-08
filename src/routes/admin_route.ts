@@ -18,5 +18,15 @@ router.get("/recent-users", adminController.recentUsers);
 router.get("/get-all-users", adminController.getAllUsers);
 router.patch("/update-user-status", adminController.updateUserStatus);
 
+router.get("/get-all-matches", adminController.getAllMatches);
+
+router.get("/get-all-pending-verification", adminController.getAllPendingVerification);
+router.patch("/update-verification", adminController.updateVerification);
+
+
+
+
+
+
 
 export default router;
