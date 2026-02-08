@@ -206,7 +206,7 @@ export const adminController = {
         res.status(401).json({ message: "Token has expired." });
         return;
       }
-      
+
       res.status(200).json({ message: "Token is valid" });
     } catch (error) {
       res.status(500).json({ message: "Internal server error" });
@@ -214,15 +214,46 @@ export const adminController = {
     }
   },
 
-  getUsers: async (req: Request, res: Response) => {
+  getAllUsers: async (req: Request, res: Response) => {
     try {
-      const users = await UserModel.find();
+      const users = await UserModel.find({ role: "user" });
       res.status(200).json({
         message: "Users retrieved successfully",
         data: users,
       });
     } catch (error) {
       res.status(500).json({ message: "Internal server error" });
+    }
+  },
+
+  updateUserStatus: async (req: Request, res: Response) => {
+    try {
+      const { id, status } = req.body;
+      if (!id || !status) {
+        res.status(400).json({ message: "User ID and status are required" });
+        return;
+      }
+
+      const user = await UserModel.findById(id);
+      if (!user) {
+        res.status(404).json({ message: "User not found" });
+        return;
+      }
+
+      if (
+        !["active", "inactive", "banned", "blocked", "deleted"].includes(status)
+      ) {
+        res.status(400).json({ message: "Invalid status" });
+        return;
+      }
+
+      user.status = status;
+      await user.save();
+
+      res.status(200).json({ message: "User updated successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
+      console.error("Error updating user status:", error);
     }
   },
 };

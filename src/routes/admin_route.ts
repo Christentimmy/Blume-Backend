@@ -7,13 +7,16 @@ const router = Router();
 
 router.post("/create", adminController.createAdmin);
 router.post("/login", adminController.login);
+router.get("/validate", adminController.validateToken);
 
 router.use(tokenValidationMiddleware, adminStatusChecker);
 
-router.get("/users", adminController.getUsers);
 router.get("/dashboard-stats", adminController.dashboardStats);
 router.get("/weekly-activities", adminController.getWeeklyActivities);
+
 router.get("/recent-users", adminController.recentUsers);
-router.get("/validate", adminController.validateToken);
+router.get("/get-all-users", adminController.getAllUsers);
+router.patch("/update-user-status", adminController.updateUserStatus);
+
 
 export default router;

@@ -1,6 +1,7 @@
-import { Document } from "mongoose";
+import { Document, Types } from "mongoose";
 
 export interface IUser extends Document {
+  _id: Types.ObjectId;
   full_name: string;
   email: string;
   phone_number: string;
@@ -9,11 +10,6 @@ export interface IUser extends Document {
   education: string;
   bio?: string;
   stripeCustomerId: string;
-  // lifestyle: {
-  //   smoking: string;
-  //   drinking: string;
-  //   workout: string;
-  // };
   basics: {
     smoking: string;
     drinking: string;
