@@ -540,7 +540,7 @@ export const userController = {
       }
       user.location = {
         type: "Point",
-        address: address.split(" ")[0],
+        address: address,
         coordinates: [longitude, latitude],
       };
       if (user.profile_completed === false) {
