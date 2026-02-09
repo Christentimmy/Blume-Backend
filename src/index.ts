@@ -32,7 +32,7 @@ app.set("trust proxy", 1);
 
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://localhost:8080"],
+    origin: ["http://localhost:5173", "http://localhost:8080", "https://blume-admin.onrender.com"],
     credentials: true,
   })
 );
