@@ -1358,4 +1358,45 @@ export const userController = {
       res.status(500).json({ message: "Internal Server Error" });
     }
   },
+
+  updateMatchPreference: async (req: Request, res: Response) => {
+    try {
+      const userId = res.locals.userId;
+      if (!userId) {
+        res.status(401).json({ message: "Unauthorized" });
+        return;
+      }
+      const { ageRange, maxDistance } = req.body;
+      if (!ageRange || !maxDistance) {
+        res.status(400).json({
+          message: "Age range and max distance are required",
+        });
+        return;
+      }
+
+      if (!Array.isArray(ageRange) || ageRange.length !== 2) {
+        res.status(400).json({
+          message: "Age range must be an array of 2 numbers",
+        });
+        return;
+      }
+
+      const user = await UserModel.findByIdAndUpdate(
+        userId,
+        {
+          "preferences.ageRange": ageRange,
+          "preferences.maxDistance": Number(maxDistance),
+        },
+        { new: true },
+      );
+
+      res.status(200).json({
+        message: "Match preference updated successfully",
+        data: user,
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  },
 };

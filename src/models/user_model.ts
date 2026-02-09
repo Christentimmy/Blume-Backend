@@ -14,11 +14,6 @@ const UserSchema = new Schema<IUser>(
       type: String,
       default: "",
     },
-    // lifestyle: {
-    //   smoking: { type: String, default: "" },
-    //   drinking: { type: String, default: "" },
-    //   workout: { type: String, default: "" },
-    // },
     basics: {
       smoking: { type: String, default: "" },
       drinking: { type: String, default: "" },

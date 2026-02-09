@@ -54,4 +54,6 @@ router.post(
 router.post("/get-people-of-interest", userController.getPeopleOfInterest);
 router.post("/get-people-of-relationship-preference", userController.getPeopleOfRelationshipPreference);
 
+router.patch("/update-match-preference", userController.updateMatchPreference);
+
 export default router;
